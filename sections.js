@@ -38,10 +38,73 @@ const commandData = [
     example: "Mem:    7.5Gi   1.2Gi   6.3Gi   120Mi   128Mi   5.8Gi",
     why: "Verifies your 8GB Pi has enough free RAM. K3s + containers need ~2GB minimum available."
   },
+  {
+    id: 4, section: "preflight", sectionTitle: "Pre-flight Checks",
+    commandTitle: "Check Disk Space",
+    command: "df -h",
+    searchTerms: "disk space free storage available df",
+    description: "Shows disk usage for all mounted filesystems. Helps you confirm you have enough free space before installing K3s and pulling container images.",
+    parts: [
+      { text: "df", explanation: "disk filesystem — reports available and used disk space" },
+      { text: "-h", explanation: "'human-readable' — shows sizes as 60.5G instead of raw bytes" }
+    ],
+    example: "Filesystem      Size  Used Avail Use% Mounted on\n/dev/root        59G   12G   44G  22% /\ntmpfs           3.9G     0  3.9G   0% /dev/shm",
+    why: "K3s and container images take up disk space. With 8GB RAM and databases, you'll want adequate storage — at least 10GB free on the root partition for K3s and containers."
+  },
+  {
+    id: 5, section: "preflight", sectionTitle: "Pre-flight Checks",
+    commandTitle: "Check cgroups Version",
+    command: "stat -fc %T /sys/fs/cgroup/",
+    searchTerms: "cgroups version check k3s resource management",
+    description: "Checks which version of cgroups is active. K3s requires cgroups v2 for proper memory and CPU resource management.",
+    parts: [
+      { text: "stat",           explanation: "display file or filesystem status" },
+      { text: "-f",             explanation: "show filesystem status instead of file status" },
+      { text: "-c %T",          explanation: "format output as filesystem type only" },
+      { text: "/sys/fs/cgroup/", explanation: "the kernel's cgroup filesystem mount point" }
+    ],
+    example: "cgroup2fs",
+    why: "cgroups v2 allows Kubernetes to enforce memory and CPU limits per pod. Without it, resource limits are ignored and pods can starve each other."
+  },
+  {
+    id: 6, section: "preflight", sectionTitle: "Pre-flight Checks",
+    commandTitle: "Enable cgroups v2 in Boot Parameters",
+    command: "sudo nano /boot/firmware/cmdline.txt",
+    searchTerms: "enable cgroups memory boot cmdline raspberry pi k3s",
+    description: "Opens the boot configuration file to enable cgroup memory support. You must add 'cgroup_memory=1 cgroup_enable=memory' to the single line in this file — space-separated, all on one line. Then reboot with 'sudo reboot'.",
+    parts: [
+      { text: "sudo",                      explanation: "run as administrator" },
+      { text: "nano",                      explanation: "terminal text editor" },
+      { text: "/boot/firmware/cmdline.txt", explanation: "Raspberry Pi boot parameters file — controls kernel startup options" }
+    ],
+    example: "console=serial0,115200 console=tty1 root=PARTUUID=12345678-02 rootfstype=ext4 elevator=deadline fsck.repair=skip rootwait cgroup_memory=1 cgroup_enable=memory",
+    why: "Raspberry Pi OS does not enable cgroup memory by default. K3s needs it to enforce resource limits on pods — without this, scheduling and limits silently fail."
+  },
 
   // ── System Setup ─────────────────────────────────────
   {
     id: 100, section: "system", sectionTitle: "System Setup",
+    commandTitle: "Install Required System Packages",
+    command: "sudo apt install -y curl wget git jq htop net-tools openssh-server",
+    searchTerms: "apt install curl wget git jq htop net-tools openssh packages",
+    description: "Installs all essential tools needed before setting up K3s. Each package serves a specific role in cluster management, debugging, and connectivity.",
+    parts: [
+      { text: "sudo",          explanation: "run as administrator" },
+      { text: "apt install",   explanation: "Debian/Ubuntu package installer" },
+      { text: "-y",            explanation: "auto-confirm all prompts" },
+      { text: "curl",          explanation: "download files from the internet (used to fetch the K3s installer)" },
+      { text: "wget",          explanation: "alternative download tool, useful for scripts" },
+      { text: "git",           explanation: "version control — useful for managing app configs and manifests" },
+      { text: "jq",            explanation: "parse and filter JSON output — handy for debugging kubectl responses" },
+      { text: "htop",          explanation: "interactive system resource monitor (CPU, RAM, processes)" },
+      { text: "net-tools",     explanation: "network troubleshooting tools: netstat, ifconfig" },
+      { text: "openssh-server", explanation: "allows remote SSH access to the Pi" }
+    ],
+    example: "Reading package lists... Done\nBuilding dependency tree... Done\nThe following NEW packages will be installed:\n  curl wget git jq htop net-tools openssh-server\n0 upgraded, 7 newly installed, 0 to remove.",
+    why: "K3s installation relies on curl to fetch the install script. The other tools are essential for monitoring, debugging, and managing your cluster day-to-day."
+  },  
+  {
+    id: 101, section: "system", sectionTitle: "System Setup",
     commandTitle: "Update & Upgrade System",
     command: "sudo apt update && sudo apt upgrade -y",
     searchTerms: "sudo apt update upgrade install packages",
@@ -58,8 +121,8 @@ const commandData = [
     why: "Ensures all security patches are installed before running Kubernetes. Old packages = potential vulnerabilities."
   },
   {
-  id: 101, section: "system", sectionTitle: "System Setup",
-    commandTitle: "Disable & Remove Swap",
+  id: 102, section: "system", sectionTitle: "System Setup",
+    commandTitle: "Disable & Remove Memory Swap",
     command: "sudo dphys-swapfile swapoff && sudo dphys-swapfile uninstall && sudo update-rc.d dphys-swapfile remove",
     searchTerms: "sudo dphys-swapfile disable swap uninstall remove",
     description: "Fully disables and removes swap memory. Swap is disk-based RAM that's much slower — Kubernetes scheduling guarantees break when swap is active.",
@@ -77,7 +140,7 @@ const commandData = [
     why: "Kubernetes pods expect fast, predictable memory. Swap causes unpredictable I/O and memory delays that break scheduling guarantees — a crashing pod is safer than a hanging cluster."
   },
   {
-    id: 102, section: "system", sectionTitle: "System Setup",
+    id: 103, section: "system", sectionTitle: "System Setup",
     commandTitle: "Open Firewall Ports",
     command: "sudo ufw status && sudo ufw allow 6443/tcp && sudo ufw allow 10250/tcp && sudo ufw allow 8080/tcp && sudo ufw allow 443/tcp && sudo ufw allow 10251/tcp && sudo ufw allow 10252/tcp",
     searchTerms: "sudo ufw allow firewall port kubernetes k3s",
@@ -100,7 +163,7 @@ const commandData = [
     },
     example: "Rule added\nRule added (v6)",
     why: "UFW blocks ALL ports by default. Each port serves a distinct Kubernetes role — missing even one can silently break scheduling, ingress, or node registration."
-  },
+  },  
 
   // ── k3s Installation ─────────────────────────────────────
   {
@@ -108,7 +171,7 @@ const commandData = [
     commandTitle: "Install k3s",
     command: "curl -sfL https://get.k3s.io | sh -",
     searchTerms: "curl install k3s script",
-    description: "Downloads the k3s installer script from the internet and runs it immediately. This is the official installation method.",
+    description: "Downloads the k3s installer script from the internet and runs it immediately. This is the official installation method.<br> K3s is a lightweight Kubernetes distribution optimized for edge devices like the Raspberry Pi. It:<br> - Removes unnecessary components that consume memory.<br> - Bundles container runtime (containerd) built-in.<br> - Is 40-60% lighter than full Kubernetes.<br> - Perfect for IoT, edge computing, and home labs",
     parts: [
       { text: "curl",             explanation: "downloads files from URLs" },
       { text: "-sfL",             explanation: "silent, fail on HTTP error, follow redirects" },
@@ -147,35 +210,6 @@ const commandData = [
     ],
     example: "NAME       STATUS   ROLES    AGE\npi5-k3s    Ready    master   5m",
     why: "<strong>Ready</strong> status = your Pi is ready to run containers. <strong>NotReady</strong> = wait or debug."
-  },
-
-  // ── Cloudflare Tunnel ─────────────────────────────────────
-  {
-    id: 300, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
-    commandTitle: "Authenticate with Cloudflare",
-    command: "cloudflared tunnel login",
-    searchTerms: "cloudflared tunnel login authenticate",
-    description: "Authenticates your Pi with your Cloudflare account. Opens a browser, you log in, Pi gets a certificate.",
-    parts: [
-      { text: "cloudflared", explanation: "Cloudflare's tunnel client" },
-      { text: "tunnel",      explanation: "subcommand for tunnel operations" },
-      { text: "login",       explanation: "authenticate with Cloudflare account" }
-    ],
-    example: "Please open the following URL and log in with your Cloudflare account:\nhttps://dash.cloudflare.com/argotunnel?...",
-    why: "The certificate proves you own the Cloudflare account. Without it, the tunnel won't work."
-  },
-  {
-    id: 301, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
-    commandTitle: "Create a Tunnel",
-    command: "cloudflared tunnel create my-pi",
-    searchTerms: "cloudflared tunnel create",
-    description: "Creates a named tunnel. \"my-pi\" is just a label. Generates a unique credentials file for this tunnel.",
-    parts: [
-      { text: "cloudflared tunnel create", explanation: "create a new tunnel" },
-      { text: "my-pi",                     explanation: "name you choose — use something meaningful" }
-    ],
-    example: "Tunnel my-pi created with ID abc123def456\nCredentials file: ~/.cloudflared/abc123def456.json",
-    why: "Creates unique credentials for this tunnel. You'll reference these in the config file later."
   },
 
   // ── Kubernetes Operations ─────────────────────────────────────
@@ -308,92 +342,6 @@ const commandData = [
     ],
     example: "namespace \"demo\" deleted",
     why: "The cleanest teardown — no need to delete Deployments and Services one by one. This is why namespacing your experiments from the start is worth it."
-  },
-
-  // ── Standalone Containers (nerdctl) ─────────────────────────────────────
-  {
-    id: 500, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
-    commandTitle: "Install nerdctl",
-    command: "curl -sfL https://github.com/containerd/nerdctl/releases/download/v2.0.2/nerdctl-full-2.0.2-linux-arm64.tar.gz | sudo tar -C /usr/local -xz",
-    searchTerms: "nerdctl install containerd arm64 pi",
-    description: "Downloads and installs the full nerdctl bundle (includes BuildKit, CNI plugins) for ARM64. The 'full' bundle means no extra steps — everything needed to build and run containers is included.",
-    parts: [
-      { text: "curl -sfL",       explanation: "download silently, fail on error, follow redirects" },
-      { text: "nerdctl-full-...-linux-arm64.tar.gz", explanation: "the 'full' ARM64 build — includes nerdctl, BuildKit, and CNI plugins" },
-      { text: "sudo tar -C /usr/local -xz", explanation: "extract the archive directly into /usr/local, putting binaries in /usr/local/bin" }
-    ],
-    example: "$ nerdctl version\nClient:\n  Version: v2.0.2\nServer (containerd):\n  Version: 2.0.x",
-    why: "nerdctl uses the containerd already running inside k3s — no second daemon, no Docker install, no conflicts. You get Docker-compatible commands for free."
-  },
-  {
-    id: 501, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
-    commandTitle: "Run a container",
-    command: "sudo nerdctl run -d --name my-nginx -p 8080:80 nginx:alpine",
-    searchTerms: "nerdctl run container start detached port",
-    description: "Pulls (if needed) and starts a container in the background. Maps port 8080 on your Pi to port 80 inside the container.",
-    parts: [
-      { text: "nerdctl run",  explanation: "create and start a new container" },
-      { text: "-d",           explanation: "detached mode — runs in background, returns container ID" },
-      { text: "--name my-nginx", explanation: "gives the container a human-readable name to reference later" },
-      { text: "-p 8080:80",  explanation: "maps Pi port 8080 → container port 80 (host:container)" },
-      { text: "nginx:alpine", explanation: "image to use — Alpine-based nginx, small and fast" }
-    ],
-    example: "Unable to find image 'nginx:alpine' locally\nPulling from docker.io/library/nginx:alpine\n...\nd3f5b5a12345abc...",
-    why: "Same command you'd type with Docker. If you know 'docker run', you already know this — just swap the prefix."
-  },
-  {
-    id: 502, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
-    commandTitle: "Stop & Remove a container",
-    command: "sudo nerdctl stop my-nginx && sudo nerdctl rm my-nginx",
-    searchTerms: "nerdctl stop remove container",
-    description: "Stops a running container gracefully, then removes it. Stop sends SIGTERM and waits; rm cleans up the container record.",
-    parts: [
-      { text: "nerdctl stop my-nginx", explanation: "sends SIGTERM to the container, waits up to 10s for clean shutdown" },
-      { text: "&&",                    explanation: "only remove if stop succeeded — prevents removing a stuck container" },
-      { text: "nerdctl rm my-nginx",   explanation: "deletes the stopped container (image stays cached locally)" }
-    ],
-    example: "my-nginx\nmy-nginx",
-    why: "Always stop before remove — skipping stop and going straight to 'rm -f' is the container equivalent of pulling the power cord."
-  },
-  {
-    id: 503, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
-    commandTitle: "List all containers",
-    command: "sudo nerdctl ps -a",
-    searchTerms: "nerdctl ps list containers running stopped",
-    description: "Lists all containers — running and stopped. Without -a you only see running ones.",
-    parts: [
-      { text: "nerdctl ps", explanation: "list containers (process status)" },
-      { text: "-a",         explanation: "'all' — includes stopped/exited containers, not just running" }
-    ],
-    example: "CONTAINER ID  IMAGE         COMMAND   STATUS     NAMES\nd3f5b5a12345  nginx:alpine  nginx -g  Up 2 min   my-nginx",
-    why: "First command to run when something isn't responding — is the container actually up, or did it exit quietly?"
-  },
-  {
-    id: 504, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
-    commandTitle: "Run Compose Services",
-    command: "sudo nerdctl compose up -d",
-    searchTerms: "nerdctl compose docker-compose up detached",
-    description: "Reads a docker-compose.yml in the current directory and starts all defined services in the background. nerdctl ships with Compose built in — no separate install needed.",
-    parts: [
-      { text: "nerdctl compose", explanation: "built-in Compose subcommand — reads docker-compose.yml" },
-      { text: "up",              explanation: "create and start all services defined in the file" },
-      { text: "-d",              explanation: "detached — runs everything in background" }
-    ],
-    example: "WARN[0000] Found orphan containers ([old-service]) ...\nContainer my-app  Started\nContainer my-db   Started",
-    why: "Your existing docker-compose.yml files work here without modification. Great for multi-container setups (app + database + cache) without needing k3s for something that simple."
-  },
-  {
-    id: 505, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
-    commandTitle: "Stop & Remove Compose Services",
-    command: "sudo nerdctl compose down",
-    searchTerms: "nerdctl compose down stop remove services",
-    description: "Stops and removes all containers, networks, and anonymous volumes created by 'compose up'. Named volumes are kept by default.",
-    parts: [
-      { text: "nerdctl compose", explanation: "built-in Compose subcommand" },
-      { text: "down",            explanation: "stop containers and remove them along with their networks" }
-    ],
-    example: "Container my-app  Stopped\nContainer my-db   Stopped\nNetwork my-project_default  Removed",
-    why: "The clean counterpart to 'compose up'. Use 'down -v' if you also want to wipe named volumes (careful — that deletes database data too)."
   },
 
   // ── Production Ready ──────────────────────────────────────────────────────
@@ -540,5 +488,120 @@ const commandData = [
     ],
     example: "NAME                                    READY   STATUS    RESTARTS\nkubernetes-dashboard-kong-...           1/1     Running   0\nkubernetes-dashboard-web-...            1/1     Running   0\n\nNAME                            CLASS     HOSTS                      ADDRESS\nkubernetes-dashboard-ingress    traefik   dashboard.your-domain.com  192.168.x.x",
     why: "If pods aren't Running or the Ingress ADDRESS is empty, something is wrong before you even open the browser. Fix here first, not after debugging Cloudflare."
+  },
+
+  // ── Cloudflare Tunnel ─────────────────────────────────────
+  {
+    id: 300, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Authenticate with Cloudflare",
+    command: "cloudflared tunnel login",
+    searchTerms: "cloudflared tunnel login authenticate",
+    description: "Authenticates your Pi with your Cloudflare account. Opens a browser, you log in, Pi gets a certificate.",
+    parts: [
+      { text: "cloudflared", explanation: "Cloudflare's tunnel client" },
+      { text: "tunnel",      explanation: "subcommand for tunnel operations" },
+      { text: "login",       explanation: "authenticate with Cloudflare account" }
+    ],
+    example: "Please open the following URL and log in with your Cloudflare account:\nhttps://dash.cloudflare.com/argotunnel?...",
+    why: "The certificate proves you own the Cloudflare account. Without it, the tunnel won't work."
+  },
+  {
+    id: 301, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Create a Tunnel",
+    command: "cloudflared tunnel create my-pi",
+    searchTerms: "cloudflared tunnel create",
+    description: "Creates a named tunnel. \"my-pi\" is just a label. Generates a unique credentials file for this tunnel.",
+    parts: [
+      { text: "cloudflared tunnel create", explanation: "create a new tunnel" },
+      { text: "my-pi",                     explanation: "name you choose — use something meaningful" }
+    ],
+    example: "Tunnel my-pi created with ID abc123def456\nCredentials file: ~/.cloudflared/abc123def456.json",
+    why: "Creates unique credentials for this tunnel. You'll reference these in the config file later."
+  },
+
+  // ── Standalone Containers (nerdctl) ─────────────────────────────────────
+  {
+    id: 500, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    commandTitle: "Install nerdctl",
+    command: "curl -sfL https://github.com/containerd/nerdctl/releases/download/v2.0.2/nerdctl-full-2.0.2-linux-arm64.tar.gz | sudo tar -C /usr/local -xz",
+    searchTerms: "nerdctl install containerd arm64 pi",
+    description: "Downloads and installs the full nerdctl bundle (includes BuildKit, CNI plugins) for ARM64. The 'full' bundle means no extra steps — everything needed to build and run containers is included.",
+    parts: [
+      { text: "curl -sfL",       explanation: "download silently, fail on error, follow redirects" },
+      { text: "nerdctl-full-...-linux-arm64.tar.gz", explanation: "the 'full' ARM64 build — includes nerdctl, BuildKit, and CNI plugins" },
+      { text: "sudo tar -C /usr/local -xz", explanation: "extract the archive directly into /usr/local, putting binaries in /usr/local/bin" }
+    ],
+    example: "$ nerdctl version\nClient:\n  Version: v2.0.2\nServer (containerd):\n  Version: 2.0.x",
+    why: "nerdctl uses the containerd already running inside k3s — no second daemon, no Docker install, no conflicts. You get Docker-compatible commands for free."
+  },
+  {
+    id: 501, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    commandTitle: "Run a container",
+    command: "sudo nerdctl run -d --name my-nginx -p 8080:80 nginx:alpine",
+    searchTerms: "nerdctl run container start detached port",
+    description: "Pulls (if needed) and starts a container in the background. Maps port 8080 on your Pi to port 80 inside the container.",
+    parts: [
+      { text: "nerdctl run",  explanation: "create and start a new container" },
+      { text: "-d",           explanation: "detached mode — runs in background, returns container ID" },
+      { text: "--name my-nginx", explanation: "gives the container a human-readable name to reference later" },
+      { text: "-p 8080:80",  explanation: "maps Pi port 8080 → container port 80 (host:container)" },
+      { text: "nginx:alpine", explanation: "image to use — Alpine-based nginx, small and fast" }
+    ],
+    example: "Unable to find image 'nginx:alpine' locally\nPulling from docker.io/library/nginx:alpine\n...\nd3f5b5a12345abc...",
+    why: "Same command you'd type with Docker. If you know 'docker run', you already know this — just swap the prefix."
+  },
+  {
+    id: 502, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    commandTitle: "Stop & Remove a container",
+    command: "sudo nerdctl stop my-nginx && sudo nerdctl rm my-nginx",
+    searchTerms: "nerdctl stop remove container",
+    description: "Stops a running container gracefully, then removes it. Stop sends SIGTERM and waits; rm cleans up the container record.",
+    parts: [
+      { text: "nerdctl stop my-nginx", explanation: "sends SIGTERM to the container, waits up to 10s for clean shutdown" },
+      { text: "&&",                    explanation: "only remove if stop succeeded — prevents removing a stuck container" },
+      { text: "nerdctl rm my-nginx",   explanation: "deletes the stopped container (image stays cached locally)" }
+    ],
+    example: "my-nginx\nmy-nginx",
+    why: "Always stop before remove — skipping stop and going straight to 'rm -f' is the container equivalent of pulling the power cord."
+  },
+  {
+    id: 503, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    commandTitle: "List all containers",
+    command: "sudo nerdctl ps -a",
+    searchTerms: "nerdctl ps list containers running stopped",
+    description: "Lists all containers — running and stopped. Without -a you only see running ones.",
+    parts: [
+      { text: "nerdctl ps", explanation: "list containers (process status)" },
+      { text: "-a",         explanation: "'all' — includes stopped/exited containers, not just running" }
+    ],
+    example: "CONTAINER ID  IMAGE         COMMAND   STATUS     NAMES\nd3f5b5a12345  nginx:alpine  nginx -g  Up 2 min   my-nginx",
+    why: "First command to run when something isn't responding — is the container actually up, or did it exit quietly?"
+  },
+  {
+    id: 504, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    commandTitle: "Run Compose Services",
+    command: "sudo nerdctl compose up -d",
+    searchTerms: "nerdctl compose docker-compose up detached",
+    description: "Reads a docker-compose.yml in the current directory and starts all defined services in the background. nerdctl ships with Compose built in — no separate install needed.",
+    parts: [
+      { text: "nerdctl compose", explanation: "built-in Compose subcommand — reads docker-compose.yml" },
+      { text: "up",              explanation: "create and start all services defined in the file" },
+      { text: "-d",              explanation: "detached — runs everything in background" }
+    ],
+    example: "WARN[0000] Found orphan containers ([old-service]) ...\nContainer my-app  Started\nContainer my-db   Started",
+    why: "Your existing docker-compose.yml files work here without modification. Great for multi-container setups (app + database + cache) without needing k3s for something that simple."
+  },
+  {
+    id: 505, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    commandTitle: "Stop & Remove Compose Services",
+    command: "sudo nerdctl compose down",
+    searchTerms: "nerdctl compose down stop remove services",
+    description: "Stops and removes all containers, networks, and anonymous volumes created by 'compose up'. Named volumes are kept by default.",
+    parts: [
+      { text: "nerdctl compose", explanation: "built-in Compose subcommand" },
+      { text: "down",            explanation: "stop containers and remove them along with their networks" }
+    ],
+    example: "Container my-app  Stopped\nContainer my-db   Stopped\nNetwork my-project_default  Removed",
+    why: "The clean counterpart to 'compose up'. Use 'down -v' if you also want to wipe named volumes (careful — that deletes database data too)."
   }
 ];
