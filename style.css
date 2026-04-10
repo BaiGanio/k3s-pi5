@@ -1,0 +1,57 @@
+:root {
+--bg-app: #f8f9fa;
+--bg-card: #ffffff;
+--bg-surface: #f1f3f5;
+--text-primary: #212529;
+--text-secondary: #6c757d;
+--text-accent: #0d6efd;
+
+--accent-info: #e7f1ff;
+--accent-text: #084298;
+--border-color: #dee2e6;
+--code-bg: #272822;
+--code-text: #f8f8f2;
+
+--font-sans: 'Inter', -apple-system, sans-serif;
+--font-mono: 'JetBrains Mono', monospace;
+--radius-lg: 12px;
+--radius-md: 8px;
+--shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+body { font-family: 'Inter', -apple-system, sans-serif; background: #f8f9fa; }
+code, .font-mono { font-family: 'JetBrains Mono', monospace; }
+.command-name { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #0d6efd; font-size: 1rem; }
+.command-part {
+    background: #e9ecef; padding: 2px 7px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+    display: inline-block; margin: 2px;
+}
+.example-box {
+    background: #2d2d2d; color: #f8f8f2; padding: 12px;
+    border-radius: 8px; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem; overflow-x: auto; white-space: pre-wrap;
+}
+.why-box {
+    background: #e7f1ff; color: #084298;
+    border-left: 4px solid #0d6efd;
+    padding: 10px 14px; border-radius: 6px; font-size: 0.9rem;
+}
+.detail-label {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #6c757d; margin-bottom: 4px;
+}
+.card { transition: transform 0.15s, box-shadow 0.15s; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1) !important; }
+.card.border-primary { border-left-width: 4px !important; }
+.accordion-button { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #0d6efd; }
+.accordion-button:not(.collapsed) { color: #0d6efd; background: #f0f5ff; box-shadow: none; }
+.accordion-button::after { filter: none; }
+.section-badge {
+    width: 28px; height: 28px; border-radius: 50%; background: #0d6efd;
+    color: #fff; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 0.85rem; font-weight: 700;
+}
+#searchInput:focus { border-color: #0d6efd; box-shadow: 0 0 0 3px rgba(13,110,253,0.15); }
+.filter-btn.active { background: #0d6efd !important; color: #fff !important; border-color: #0d6efd !important; }
+.no-results { display: none; }
