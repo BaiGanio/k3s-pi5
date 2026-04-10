@@ -184,6 +184,301 @@ const commandData = [
     ],
     example: '10.42.0.1 - - [10/Apr/2026:12:00:00] "GET / HTTP/1.1" 200 615',
     why: "See actual error messages. If a pod crashes, logs tell you why (port in use, missing config, etc.)."
+  },
+  // ── nerdctl ──────────────────────────────────────────────────────────────
+  {
+    id: 15, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    command: "curl -sfL https://github.com/containerd/nerdctl/releases/download/v2.0.2/nerdctl-full-2.0.2-linux-arm64.tar.gz | sudo tar -C /usr/local -xz",
+    searchTerms: "nerdctl install containerd arm64 pi",
+    description: "Downloads and installs the full nerdctl bundle (includes BuildKit, CNI plugins) for ARM64. The 'full' bundle means no extra steps — everything needed to build and run containers is included.",
+    parts: [
+      { text: "curl -sfL",       explanation: "download silently, fail on error, follow redirects" },
+      { text: "nerdctl-full-...-linux-arm64.tar.gz", explanation: "the 'full' ARM64 build — includes nerdctl, BuildKit, and CNI plugins" },
+      { text: "sudo tar -C /usr/local -xz", explanation: "extract the archive directly into /usr/local, putting binaries in /usr/local/bin" }
+    ],
+    example: "$ nerdctl version\nClient:\n  Version: v2.0.2\nServer (containerd):\n  Version: 2.0.x",
+    why: "nerdctl uses the containerd already running inside k3s — no second daemon, no Docker install, no conflicts. You get Docker-compatible commands for free."
+  },
+  {
+    id: 16, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    command: "sudo nerdctl run -d --name my-nginx -p 8080:80 nginx:alpine",
+    searchTerms: "nerdctl run container start detached port",
+    description: "Pulls (if needed) and starts a container in the background. Maps port 8080 on your Pi to port 80 inside the container.",
+    parts: [
+      { text: "nerdctl run",  explanation: "create and start a new container" },
+      { text: "-d",           explanation: "detached mode — runs in background, returns container ID" },
+      { text: "--name my-nginx", explanation: "gives the container a human-readable name to reference later" },
+      { text: "-p 8080:80",  explanation: "maps Pi port 8080 → container port 80 (host:container)" },
+      { text: "nginx:alpine", explanation: "image to use — Alpine-based nginx, small and fast" }
+    ],
+    example: "Unable to find image 'nginx:alpine' locally\nPulling from docker.io/library/nginx:alpine\n...\nd3f5b5a12345abc...",
+    why: "Same command you'd type with Docker. If you know 'docker run', you already know this — just swap the prefix."
+  },
+  {
+    id: 17, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    command: "sudo nerdctl stop my-nginx && sudo nerdctl rm my-nginx",
+    searchTerms: "nerdctl stop remove container",
+    description: "Stops a running container gracefully, then removes it. Stop sends SIGTERM and waits; rm cleans up the container record.",
+    parts: [
+      { text: "nerdctl stop my-nginx", explanation: "sends SIGTERM to the container, waits up to 10s for clean shutdown" },
+      { text: "&&",                    explanation: "only remove if stop succeeded — prevents removing a stuck container" },
+      { text: "nerdctl rm my-nginx",   explanation: "deletes the stopped container (image stays cached locally)" }
+    ],
+    example: "my-nginx\nmy-nginx",
+    why: "Always stop before remove — skipping stop and going straight to 'rm -f' is the container equivalent of pulling the power cord."
+  },
+  {
+    id: 18, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    command: "sudo nerdctl ps -a",
+    searchTerms: "nerdctl ps list containers running stopped",
+    description: "Lists all containers — running and stopped. Without -a you only see running ones.",
+    parts: [
+      { text: "nerdctl ps", explanation: "list containers (process status)" },
+      { text: "-a",         explanation: "'all' — includes stopped/exited containers, not just running" }
+    ],
+    example: "CONTAINER ID  IMAGE         COMMAND   STATUS     NAMES\nd3f5b5a12345  nginx:alpine  nginx -g  Up 2 min   my-nginx",
+    why: "First command to run when something isn't responding — is the container actually up, or did it exit quietly?"
+  },
+  {
+    id: 19, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    command: "sudo nerdctl compose up -d",
+    searchTerms: "nerdctl compose docker-compose up detached",
+    description: "Reads a docker-compose.yml in the current directory and starts all defined services in the background. nerdctl ships with Compose built in — no separate install needed.",
+    parts: [
+      { text: "nerdctl compose", explanation: "built-in Compose subcommand — reads docker-compose.yml" },
+      { text: "up",              explanation: "create and start all services defined in the file" },
+      { text: "-d",              explanation: "detached — runs everything in background" }
+    ],
+    example: "WARN[0000] Found orphan containers ([old-service]) ...\nContainer my-app  Started\nContainer my-db   Started",
+    why: "Your existing docker-compose.yml files work here without modification. Great for multi-container setups (app + database + cache) without needing k3s for something that simple."
+  },
+  {
+    id: 20, section: "nerdctl", sectionTitle: "nerdctl (Standalone Containers)",
+    command: "sudo nerdctl compose down",
+    searchTerms: "nerdctl compose down stop remove services",
+    description: "Stops and removes all containers, networks, and anonymous volumes created by 'compose up'. Named volumes are kept by default.",
+    parts: [
+      { text: "nerdctl compose", explanation: "built-in Compose subcommand" },
+      { text: "down",            explanation: "stop containers and remove them along with their networks" }
+    ],
+    example: "Container my-app  Stopped\nContainer my-db   Stopped\nNetwork my-project_default  Removed",
+    why: "The clean counterpart to 'compose up'. Use 'down -v' if you also want to wipe named volumes (careful — that deletes database data too)."
+  },
+  {
+    id: 21, section: "kubernetes", sectionTitle: "Kubernetes Operations",
+    command: "kubectl create namespace demo",
+    searchTerms: "kubectl namespace create demo",
+    description: "Creates a logical grouping called a namespace to keep your demo resources isolated from k3s system pods.",
+    parts: [
+      { text: "kubectl",   explanation: "Kubernetes CLI" },
+      { text: "create",    explanation: "create a new resource" },
+      { text: "namespace", explanation: "resource type — a virtual cluster inside your cluster" },
+      { text: "demo",      explanation: "name you choose for this namespace" }
+    ],
+    example: "namespace/demo created",
+    why: "Namespaces prevent your test nginx from mixing with system pods. Easy to nuke everything later with one command: kubectl delete namespace demo."
+  },
+  {
+    id: 22, section: "kubernetes", sectionTitle: "Kubernetes Operations",
+    command: "kubectl create deployment nginx --image=nginx:alpine --namespace=demo",
+    searchTerms: "kubectl create deployment nginx image namespace",
+    description: "Creates a Deployment that tells Kubernetes to run one nginx container using the lightweight Alpine-based image, inside the demo namespace.",
+    parts: [
+      { text: "kubectl create deployment", explanation: "imperative shortcut — generates a Deployment without writing YAML" },
+      { text: "nginx",                     explanation: "name of the Deployment" },
+      { text: "--image=nginx:alpine",       explanation: "container image to run — Alpine variant is small (~8MB)" },
+      { text: "--namespace=demo",           explanation: "which namespace to create this in" }
+    ],
+    example: "deployment.apps/nginx created",
+    why: "The imperative 'create deployment' is faster than writing YAML for quick tests. For production you'd use a YAML file instead so it's version-controlled."
+  },
+  {
+    id: 23, section: "kubernetes", sectionTitle: "Kubernetes Operations",
+    command: "kubectl expose deployment nginx --port=80 --type=NodePort --namespace=demo",
+    searchTerms: "kubectl expose deployment service nodeport port",
+    description: "Creates a Service that exposes the nginx Deployment on a port accessible from outside the cluster — i.e. from your browser on the same network as the Pi.",
+    parts: [
+      { text: "kubectl expose deployment nginx", explanation: "creates a Service targeting the nginx Deployment" },
+      { text: "--port=80",                       explanation: "the port nginx listens on inside the container" },
+      { text: "--type=NodePort",                 explanation: "exposes the service on a high port (30000–32767) on the Pi's IP" },
+      { text: "--namespace=demo",                explanation: "must match the namespace the deployment lives in" }
+    ],
+    example: "service/nginx exposed",
+    why: "Without a Service, the pod is unreachable from outside Kubernetes. NodePort is the simplest way to test on a local Pi — no load balancer needed."
+  },
+  {
+    id: 24, section: "kubernetes", sectionTitle: "Kubernetes Operations",
+    command: "kubectl get service nginx --namespace=demo",
+    searchTerms: "kubectl get service nodeport port number",
+    description: "Shows the Service details — most importantly the NodePort number you'll use to reach nginx in your browser.",
+    parts: [
+      { text: "kubectl get service", explanation: "list service resources" },
+      { text: "nginx",               explanation: "name of the specific service to inspect" },
+      { text: "--namespace=demo",    explanation: "namespace where the service lives" }
+    ],
+    example: "NAME    TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE\nnginx   NodePort   10.43.12.200   <none>        80:31234/TCP   30s",
+    why: "The number after the colon in PORT(S) — 31234 in this example — is your NodePort. Open http://<pi-ip>:31234 in your browser and you should see the nginx welcome page."
+  },
+  {
+    id: 25, section: "kubernetes", sectionTitle: "Kubernetes Operations",
+    command: "kubectl scale deployment nginx --replicas=3 --namespace=demo",
+    searchTerms: "kubectl scale deployment replicas",
+    description: "Scales the nginx Deployment from 1 pod up to 3. Kubernetes will spin up the extra pods automatically and load-balance traffic across all three.",
+    parts: [
+      { text: "kubectl scale deployment nginx", explanation: "target the nginx Deployment for scaling" },
+      { text: "--replicas=3",                   explanation: "desired number of running pod copies" },
+      { text: "--namespace=demo",               explanation: "namespace where the deployment lives" }
+    ],
+    example: "deployment.apps/nginx scaled",
+    why: "This is where Kubernetes earns its keep — one command to go from 1 to 3 pods with automatic load balancing. Scale back down to 1 the same way."
+  },
+  {
+    id: 26, section: "kubernetes", sectionTitle: "Kubernetes Operations",
+    command: "kubectl delete namespace demo",
+    searchTerms: "kubectl delete namespace cleanup teardown",
+    description: "Deletes the entire demo namespace and everything inside it — Deployment, Service, and all pods — in one shot.",
+    parts: [
+      { text: "kubectl delete", explanation: "remove a resource" },
+      { text: "namespace",      explanation: "resource type to delete" },
+      { text: "demo",           explanation: "name of the namespace — everything inside goes with it" }
+    ],
+    example: "namespace \"demo\" deleted",
+    why: "The cleanest teardown — no need to delete Deployments and Services one by one. This is why namespacing your experiments from the start is worth it."
+  },
+  // ── Production Ready ──────────────────────────────────────────────────────
+  {
+    id: 27, section: "production", sectionTitle: "Production Ready",
+    command: "curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null && sudo apt-get install -y apt-transport-https && echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main\" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list && sudo apt-get update && sudo apt-get install -y helm",
+    searchTerms: "helm install apt kubernetes package manager",
+    description: "Installs Helm — the package manager for Kubernetes — via the official Helm apt repository. Helm lets you install complex apps like the Kubernetes Dashboard with a single command instead of dozens of YAML files.",
+    parts: [
+      { text: "curl ... | gpg --dearmor | sudo tee ...", explanation: "downloads and installs Helm's GPG signing key so apt can verify packages" },
+      { text: "echo \"deb [...] ...\" | sudo tee ...",   explanation: "adds the official Helm apt repository to your sources list" },
+      { text: "sudo apt-get install -y helm",            explanation: "installs the helm binary" }
+    ],
+    example: "Reading package lists... Done\nThe following NEW packages will be installed: helm\n...\nSetting up helm (4.x.x)",
+    why: "Helm is required to install the Kubernetes Dashboard the official way. It also becomes your go-to tool for every production app you deploy going forward."
+  },
+  {
+    id: 28, section: "production", sectionTitle: "Production Ready",
+    command: "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
+    searchTerms: "kubeconfig k3s helm kubectl environment variable",
+    description: "Points kubectl and Helm at k3s's kubeconfig file. k3s stores it in a non-standard location — without this, Helm commands will fail with 'connection refused'.",
+    parts: [
+      { text: "export",                        explanation: "sets an environment variable for the current shell session" },
+      { text: "KUBECONFIG",                    explanation: "the variable kubectl and Helm both look for to find cluster credentials" },
+      { text: "/etc/rancher/k3s/k3s.yaml",    explanation: "where k3s stores its kubeconfig instead of the default ~/.kube/config" }
+    ],
+    example: "(no output — add this line to ~/.bashrc to make it permanent)",
+    why: "Every Helm command in the next steps depends on this. To make it permanent so it survives reboots, run: echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> ~/.bashrc"
+  },
+  {
+    id: 29, section: "production", sectionTitle: "Production Ready",
+    command: "helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/ && helm repo update",
+    searchTerms: "helm repo add kubernetes dashboard chart repository",
+    description: "Adds the official Kubernetes Dashboard Helm chart repository and refreshes the local chart index.",
+    parts: [
+      { text: "helm repo add kubernetes-dashboard", explanation: "registers the repository under the alias 'kubernetes-dashboard'" },
+      { text: "https://kubernetes.github.io/dashboard/", explanation: "the official chart repository URL maintained by the Kubernetes project" },
+      { text: "helm repo update",                  explanation: "fetches the latest chart versions from all registered repos" }
+    ],
+    example: "\"kubernetes-dashboard\" has been added to your repositories\nHang tight while we grab the latest from your chart repositories...\nUpdate Complete.",
+    why: "Helm needs to know where to find the chart before it can install it. This is a one-time setup step."
+  },
+  {
+    id: 30, section: "production", sectionTitle: "Production Ready",
+    command: "helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard",
+    searchTerms: "helm install kubernetes dashboard namespace",
+    description: "Installs (or upgrades if already installed) the Kubernetes Dashboard into its own dedicated namespace. Helm handles all dependencies automatically.",
+    parts: [
+      { text: "helm upgrade --install",              explanation: "install if not present, upgrade if already installed — safe to run repeatedly" },
+      { text: "kubernetes-dashboard",                explanation: "the name you give this Helm release" },
+      { text: "kubernetes-dashboard/kubernetes-dashboard", explanation: "repo-alias/chart-name" },
+      { text: "--create-namespace --namespace kubernetes-dashboard", explanation: "creates the namespace if it doesn't exist, then deploys everything there" }
+    ],
+    example: "Release \"kubernetes-dashboard\" does not exist. Installing it now.\nNAME: kubernetes-dashboard\nSTATUS: deployed",
+    why: "The Helm chart installs the dashboard, Kong proxy (which handles HTTPS internally), and all required RBAC in one shot. No manual YAML juggling."
+  },
+  {
+    id: 31, section: "production", sectionTitle: "Production Ready",
+    command: "kubectl apply -f - <<EOF\napiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: admin-user\n  namespace: kubernetes-dashboard\n---\napiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRoleBinding\nmetadata:\n  name: admin-user\nroleRef:\n  apiGroup: rbac.authorization.k8s.io\n  kind: ClusterRole\n  name: cluster-admin\nsubjects:\n- kind: ServiceAccount\n  name: admin-user\n  namespace: kubernetes-dashboard\nEOF",
+    searchTerms: "kubectl serviceaccount clusterrolebinding admin dashboard token rbac",
+    description: "Creates an admin ServiceAccount and binds it to the cluster-admin ClusterRole. This gives the dashboard full visibility into your cluster. The dashboard only supports Bearer Token login, so this account is what you'll log in with.",
+    parts: [
+      { text: "ServiceAccount",      explanation: "an identity for a process running in the cluster (your login user)" },
+      { text: "ClusterRoleBinding",  explanation: "grants the ServiceAccount a cluster-wide role" },
+      { text: "cluster-admin",       explanation: "built-in Kubernetes role with full read/write access to everything" },
+      { text: "<<EOF ... EOF",        explanation: "heredoc — pipes the YAML directly to kubectl without creating a file" }
+    ],
+    example: "serviceaccount/admin-user created\nclusterrolebinding.rbac.authorization.k8s.io/admin-user created",
+    why: "Without this, the dashboard loads but shows empty pages — it has no permission to read your cluster's resources."
+  },
+  {
+    id: 32, section: "production", sectionTitle: "Production Ready",
+    command: "kubectl -n kubernetes-dashboard create token admin-user",
+    searchTerms: "kubectl create token admin-user dashboard login bearer",
+    description: "Generates a short-lived Bearer Token for the admin-user account. Copy the output — this is what you paste into the dashboard login screen.",
+    parts: [
+      { text: "kubectl create token", explanation: "generates a signed JWT token for the given ServiceAccount" },
+      { text: "admin-user",           explanation: "the ServiceAccount created in the previous step" },
+      { text: "-n kubernetes-dashboard", explanation: "namespace where the ServiceAccount lives" }
+    ],
+    example: "eyJhbGciOiJSUzI1NiIsImtpZCI6Ii...(long token string)...XQ",
+    why: "Tokens expire after 1 hour by default. For a persistent token add '--duration=0' (never expires) — useful for a homelab, but disable if this dashboard is internet-facing."
+  },
+  {
+    id: 33, section: "production", sectionTitle: "Production Ready",
+    command: "kubectl apply -f - <<EOF\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: kubernetes-dashboard-ingress\n  namespace: kubernetes-dashboard\n  annotations:\n    traefik.ingress.kubernetes.io/router.entrypoints: websecure\n    traefik.ingress.kubernetes.io/router.tls: \"true\"\n    traefik.ingress.kubernetes.io/service.serversscheme: https\nspec:\n  ingressClassName: traefik\n  rules:\n  - host: dashboard.your-domain.com\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: kubernetes-dashboard-kong-proxy\n            port:\n              number: 443\nEOF",
+    searchTerms: "traefik ingress kubernetes dashboard kong proxy https annotation",
+    description: "Creates a Traefik Ingress rule that routes traffic for your domain to the dashboard's Kong proxy over HTTPS. Replace dashboard.your-domain.com with your actual subdomain configured in Cloudflare.",
+    parts: [
+      { text: "ingressClassName: traefik",          explanation: "tells k3s to use its built-in Traefik ingress controller" },
+      { text: "traefik.ingress.kubernetes.io/service.serversscheme: https", explanation: "critical annotation — tells Traefik that the backend (Kong) speaks HTTPS, not HTTP" },
+      { text: "kubernetes-dashboard-kong-proxy",     explanation: "the internal service name created by the Helm chart — Kong handles auth and proxies to the actual dashboard" },
+      { text: "host: dashboard.your-domain.com",    explanation: "the public hostname Traefik will match against incoming requests" }
+    ],
+    example: "ingress.networking.k8s.io/kubernetes-dashboard-ingress created",
+    why: "This is the glue between Cloudflare Tunnel → Traefik → Dashboard. Without the serversscheme annotation Traefik sends HTTP to Kong, which expects HTTPS, and you get a cryptic 502 error."
+  },
+  {
+    id: 34, section: "production", sectionTitle: "Production Ready",
+    command: "cloudflared tunnel route dns <your-tunnel-name> dashboard.your-domain.com",
+    searchTerms: "cloudflared tunnel route dns subdomain dashboard",
+    description: "Adds a DNS record in Cloudflare pointing dashboard.your-domain.com at your tunnel. No ports need to be opened on your Pi's firewall.",
+    parts: [
+      { text: "cloudflared tunnel route dns", explanation: "creates a CNAME record in Cloudflare DNS pointing to your tunnel's .cfargotunnel.com address" },
+      { text: "<your-tunnel-name>",           explanation: "the tunnel name you created earlier (e.g. my-pi)" },
+      { text: "dashboard.your-domain.com",    explanation: "the subdomain — must match the host in the Ingress rule above" }
+    ],
+    example: "2026-04-10T12:00:00Z INF Added CNAME dashboard.your-domain.com which will route to this tunnel tunnelID=abc123",
+    why: "This wires Cloudflare's edge network to your tunnel without touching your router or firewall. Traffic flows: Browser → Cloudflare edge → tunnel → Pi → Traefik → Dashboard."
+  },
+  {
+    id: 35, section: "production", sectionTitle: "Production Ready",
+    command: "kubectl apply -f - <<EOF\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cloudflared-config\n  namespace: cloudflared\ndata:\n  config.yaml: |\n    tunnel: <your-tunnel-id>\n    credentials-file: /etc/cloudflared/creds/credentials.json\n    ingress:\n      - hostname: dashboard.your-domain.com\n        service: https://kubernetes-dashboard-kong-proxy.kubernetes-dashboard.svc.cluster.local:443\n        originRequest:\n          noTLSVerify: true\n      - service: http_status:404\nEOF",
+    searchTerms: "cloudflared configmap tunnel ingress kubernetes service cluster local",
+    description: "Alternatively: configure cloudflared running inside the cluster (as a Deployment) to route directly to the dashboard service by its internal DNS name — bypassing Traefik entirely for a simpler setup.",
+    parts: [
+      { text: "tunnel: <your-tunnel-id>",    explanation: "the UUID of your tunnel from 'cloudflared tunnel create'" },
+      { text: "credentials-file",            explanation: "path to your tunnel credentials JSON, mounted as a Kubernetes Secret" },
+      { text: "kubernetes-dashboard-kong-proxy.kubernetes-dashboard.svc.cluster.local", explanation: "the full internal DNS name of the dashboard service — only resolvable inside the cluster" },
+      { text: "noTLSVerify: true",           explanation: "skips certificate validation for the internal connection — safe since traffic never leaves the cluster" }
+    ],
+    example: "configmap/cloudflared-config created",
+    why: "This is the alternative to the Traefik Ingress approach: cloudflared runs as a pod inside k3s and routes straight to the dashboard service. Simpler, but you lose Traefik's middleware features (rate limiting, auth headers, etc.)."
+  },
+  {
+    id: 36, section: "production", sectionTitle: "Production Ready",
+    command: "kubectl get pods -n kubernetes-dashboard && kubectl get ingress -n kubernetes-dashboard",
+    searchTerms: "kubectl get pods ingress dashboard verify check",
+    description: "Verifies the full setup: checks all dashboard pods are Running, and confirms the Ingress rule is active with the correct host assigned.",
+    parts: [
+      { text: "kubectl get pods -n kubernetes-dashboard",   explanation: "lists all pods in the dashboard namespace — all should show Running" },
+      { text: "&&",                                          explanation: "run the second command only if the first exits cleanly" },
+      { text: "kubectl get ingress -n kubernetes-dashboard", explanation: "shows the Ingress rule and confirms the hostname is correctly registered with Traefik" }
+    ],
+    example: "NAME                                    READY   STATUS    RESTARTS\nkubernetes-dashboard-kong-...           1/1     Running   0\nkubernetes-dashboard-web-...            1/1     Running   0\n\nNAME                            CLASS     HOSTS                      ADDRESS\nkubernetes-dashboard-ingress    traefik   dashboard.your-domain.com  192.168.x.x",
+    why: "If pods aren't Running or the Ingress ADDRESS is empty, something is wrong before you even open the browser. Fix here first, not after debugging Cloudflare."
   }
 ];
 
