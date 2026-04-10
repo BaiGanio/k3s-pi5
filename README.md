@@ -21,32 +21,6 @@
 9. [Verification & Testing](#verification--testing)
 10. [Troubleshooting](#troubleshooting)
 
----
-
-## Pre-Flight Checks
-
-### Why This Matters
-Before installing k3s, we need to ensure your Raspberry Pi 5 is properly configured and has no system-level issues that might prevent Kubernetes from running correctly.
-
-### Step 1: Verify OS and Hardware
-
-```bash
-# Check your OS and kernel version
-cat /etc/os-release
-uname -a
-
-# Expected output:
-# - OS: Raspberry Pi OS (Debian-based)
-# - Kernel: Linux ... aarch64 (ARM 64-bit)
-# - RAM: Should show ~7.5GB available
-free -h
-
-# Check CPU
-cat /proc/cpuinfo | grep "model name"
-# Should show: Cortex-A76 (4 cores)
-```
-
-**What it means:** Raspberry Pi 5 uses ARM64 architecture, so all container images must be ARM64-compatible. This is important when choosing Docker images later.
 
 ### Step 2: Update System Packages
 
