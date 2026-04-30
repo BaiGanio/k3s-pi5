@@ -15,17 +15,10 @@ const MODULE_REGISTRY = [
     modules: [
       {
         id: "m1-devops-intro",
-        title: "M1 – Introduction to DevOps",
+        title: "M1 - Introduction to DevOps",
         subtitle: "VirtualBox · Vagrant · Manual deploy",
         script: "modules/m1-devops-intro.js",
         ready: true,
-      },
-      {
-        id: "m2-placeholder",
-        title: "M2 – (coming soon)",
-        subtitle: "",
-        script: null,
-        ready: false,
       },
     ],
   },
@@ -34,11 +27,18 @@ const MODULE_REGISTRY = [
     icon: "🐳",
     modules: [
       {
-        id: "m3-placeholder",
-        title: "M3 – (coming soon)",
-        subtitle: "",
-        script: null,
-        ready: false,
+        id: "m2-docker-intro",
+        title: "M2 - Docker installation and configuration",
+        subtitle: "WTF is a container? Installing Docker on Raspberry Pi OS",
+        script: "modules/m2-docker-intro.js",
+        ready: true,
+      },
+      {
+        id: "m3-advanced-docker",
+        title: "M3 - Advanced Docker",
+        subtitle: "... ",
+        script: "modules/m3-advanced-docker.js",
+        ready: true,
       },
     ],
   },
