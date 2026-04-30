@@ -1,4 +1,5 @@
 const commandData = [
+  // ── Pre-flight checks ─────────────────────────────────────
   {
     id: 1, section: "preflight", sectionTitle: "Pre-flight Checks",
     commandTitle: "Check OS",
