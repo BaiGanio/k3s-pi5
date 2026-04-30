@@ -1,4 +1,4 @@
-const commandData = [
+window.commandData = [
   // ── Pre-flight checks ─────────────────────────────────────
   {
     id: 1, section: "preflight", sectionTitle: "Pre-flight Checks",
