@@ -3,6 +3,24 @@
 
 window.commandData = [
 
+  // ── Preflight: Install Vagrant ────────────────────────────────────────────
+
+  {
+    id: 1,
+    section: "vagrant",
+    sectionTitle: "Install Vagrant",
+    commandTitle: "Install Vagrant via Homebrew (HashiCorp tap)",
+    command: "brew tap hashicorp/tap && brew install hashicorp/tap/hashicorp-vagrant",
+    searchTerms: "brew tap hashicorp vagrant install macos homebrew arm64 m1 apple silicon",
+    description: "Adds the official HashiCorp Homebrew tap, then installs Vagrant directly from it. The tap ensures you get the canonical HashiCorp-maintained formula rather than the community-maintained cask — important for getting the latest release with full Apple Silicon support.",
+    parts: [
+      { text: "brew tap hashicorp/tap", explanation: "registers HashiCorp's official Homebrew tap — a third-party formula repository hosted at github.com/hashicorp/homebrew-tap — so Homebrew knows where to find HashiCorp's own packages" },
+      { text: "brew install hashicorp/tap/hashicorp-vagrant", explanation: "installs Vagrant from the HashiCorp tap specifically, not from Homebrew's default formula index — the fully qualified path hashicorp/tap/hashicorp-vagrant avoids any name collision with the older community cask" },
+    ],
+    example: "==> Tapping hashicorp/tap\nCloning into '/opt/homebrew/Library/Taps/hashicorp/homebrew-tap'...\n==> Fetching hashicorp/tap/hashicorp-vagrant\n==> Installing hashicorp/tap/hashicorp-vagrant\n🍺  /opt/homebrew/Caskroom/hashicorp-vagrant/2.4.3: 3 files, 154MB",
+    why: "HashiCorp moved their official Homebrew distribution to their own tap. Using the tap formula guarantees you track HashiCorp's release cadence directly — same binary as the official .dmg installer, with Homebrew handling PATH registration and future upgrades via 'brew upgrade'.",
+  },
+
   // ── Part 1: Parallels Plugin ──────────────────────────────────────────────
 
   {
@@ -28,11 +46,11 @@ window.commandData = [
     section: "init",
     sectionTitle: "Initialize a Project",
     commandTitle: "Create a project folder and initialize a box",
-    command: "mkdir my-dev-env && cd my-dev-env && vagrant init bento/ubuntu-22.04-arm64",
+    command: "mkdir dev-env && cd dev-env && vagrant init bento/ubuntu-22.04-arm64",
     searchTerms: "vagrant init bento ubuntu arm64 vagrantfile mkdir project folder",
     description: "Creates a new project directory, enters it, and generates a <code>Vagrantfile</code> pre-configured to use the <code>bento/ubuntu-22.04-arm64</code> box — a clean, minimal Ubuntu 22.04 image compiled for ARM64. This is the critical detail on Apple Silicon: you must use an ARM64 box, not an x86_64 one.",
     parts: [
-      { text: "mkdir my-dev-env && cd my-dev-env", explanation: "each Vagrant project lives in its own folder — the Vagrantfile and .vagrant/ state directory both go here" },
+      { text: "mkdir dev-env && cd dev-env", explanation: "each Vagrant project lives in its own folder — the Vagrantfile and .vagrant/ state directory both go here" },
       { text: "vagrant init", explanation: "generates a Vagrantfile in the current directory with the named box as the base image" },
       { text: "bento/ubuntu-22.04-arm64", explanation: "the Bento project by Chef — maintained ARM64 images that are regularly updated and well-tested on Parallels" },
     ],
@@ -101,10 +119,10 @@ window.commandData = [
     searchTerms: "vagrant forwarded_port port forward network guest host 3000 5432 node postgres",
     description: "Maps ports from inside the VM to your Mac's localhost. Your Express app listening on port 3000 inside the VM becomes reachable at <code>http://localhost:3000</code> on your Mac. Same for PostgreSQL on 5432 — connect with any GUI like TablePlus without changing the host.",
     parts: [
-      { text: 'guest: 3000, host: 3000', explanation: "traffic arriving at localhost:3000 on your Mac is tunnelled to port 3000 inside the VM — where your Node.js/Express app listens" },
-      { text: 'guest: 5432, host: 5432', explanation: "maps the PostgreSQL default port — lets you connect from Mac-side tools like psql, TablePlus, or DataGrip directly to the VM's Postgres" },
+      { text: "guest: 3000, host: 3000", explanation: "traffic arriving at localhost:3000 on your Mac is tunnelled to port 3000 inside the VM — where your Node.js/Express app listens" },
+      { text: "guest: 5432, host: 5432", explanation: "maps the PostgreSQL default port — lets you connect from Mac-side tools like psql, TablePlus, or DataGrip directly to the VM's Postgres" },
     ],
-    example: "# After vagrant reload:\n# On your Mac:\n$ curl http://localhost:3000/api/health\n{\"status\":\"ok\"}\n\n$ psql -h localhost -U devuser -d appdb\npsql (16.3)\nType 'help' for help.\nappdb=#",
+    example: "# After vagrant reload:\n# On your Mac:\n$ curl http://localhost:3000/api/health\n{\"status\":\"ok\"}\n\n$ psql -h localhost -U appuser -d appdb\npsql (16.3)\nType 'help' for help.\nappdb=#",
     why: "Port forwarding means your Mac browser and database tools work against the VM exactly as they would against a remote server — no special network config, no VPN, no IP address to remember.",
   },
 
@@ -121,7 +139,7 @@ window.commandData = [
       { text: "prl.memory = 8192", explanation: "sets the VM's RAM to 8 GB (in MB) — increase to 16384 for heavier workloads like running tests in parallel" },
       { text: "prl.cpus = 4", explanation: "gives the VM 4 CPU cores — the M1's performance cores are fast enough that 4 vCPUs handle most dev workloads well" },
     ],
-    example: "# Full provider block in context:\nconfig.vm.provider 'parallels' do |prl|\n  prl.memory = 8192\n  prl.cpus   = 4\n  prl.name   = 'my-dev-env'  # shown in Parallels Desktop UI\nend",
+    example: "# Full provider block in context:\nconfig.vm.provider 'parallels' do |prl|\n  prl.memory = 8192\n  prl.cpus   = 4\n  prl.name   = 'dev-env'  # shown in Parallels Desktop UI\nend",
     why: "Vagrant defaults are conservative (1 GB RAM, 1 CPU). For running a Node.js app, PostgreSQL, and npm install simultaneously you need real resources. Apple Silicon's memory architecture means sharing 8 GB with the VM has almost no impact on Mac-side responsiveness.",
   },
 
@@ -130,7 +148,7 @@ window.commandData = [
     section: "config",
     sectionTitle: "Configure the Vagrantfile",
     commandTitle: "Provision Node.js and PostgreSQL automatically",
-    command: 'config.vm.provision "shell", inline: <<-SHELL\n  curl -fsSL https://deb.nodesource.com/setup_18.x | bash -\n  apt-get install -y nodejs postgresql postgresql-contrib\n  sudo -u postgres psql -c "CREATE USER devuser WITH PASSWORD \'secret\';"\n  sudo -u postgres psql -c "CREATE DATABASE appdb OWNER devuser;"\nSHELL',
+    command: 'config.vm.provision "shell", inline: <<-SHELL\n  curl -fsSL https://deb.nodesource.com/setup_18.x | bash -\n  apt-get install -y nodejs postgresql postgresql-contrib\n  sudo -u postgres psql -c "CREATE USER appuser WITH PASSWORD \'secret\';"\n  sudo -u postgres psql -c "CREATE DATABASE appdb OWNER appuser;"\nSHELL',
     searchTerms: "vagrant provision shell nodejs postgresql apt-get inline script setup",
     description: "Adds an inline shell provisioner that runs once on first <code>vagrant up</code>. It installs Node.js 18 LTS via the NodeSource repo and PostgreSQL, then creates the application database user and database — so the VM is fully ready with no manual steps.",
     parts: [
@@ -139,14 +157,191 @@ window.commandData = [
       { text: "apt-get install -y nodejs postgresql", explanation: "installs both runtimes in one pass — no interactive prompts (-y confirms everything)" },
       { text: "sudo -u postgres psql -c", explanation: "runs SQL as the postgres superuser to create the app's database role and database" },
     ],
-    example: "==> default: Running provisioner: shell...\n==> default: Installing Node.js 18...\n==> default: Setting up postgresql...\n==> default: CREATE ROLE\n==> default: CREATE DATABASE\n\n# Inside the VM after provisioning:\n$ node --version\nv18.20.4\n$ psql -U devuser -d appdb -c 'SELECT NOW();'\n           now\n------------------------\n 2024-11-15 10:30:00+00",
+    example: "==> default: Running provisioner: shell...\n==> default: Installing Node.js 18...\n==> default: Setting up postgresql...\n==> default: CREATE ROLE\n==> default: CREATE DATABASE\n\n# Inside the VM after provisioning:\n$ node --version\nv18.20.4\n$ psql -U appuser -d appdb -c 'SELECT NOW();'\n           now\n------------------------\n 2024-11-15 10:30:00+00",
     why: "Provisioning makes the VM self-documenting and reproducible. A new team member runs 'vagrant up' and gets an identical environment in minutes — no README steps, no 'works on my machine' problems, no leftover global packages on the host.",
   },
 
-  // ── Part 5: Day-to-Day Commands ───────────────────────────────────────────
+  // ── Part 5: Web Server Setup (app-web) ───────────────────────────────────
 
   {
     id: 501,
+    section: "app-web",
+    sectionTitle: "Web Server Setup",
+    commandTitle: "Set hostname to app-web",
+    command: "sudo hostnamectl set-hostname app-web",
+    searchTerms: "hostname hostnamectl set rename machine app-web web server",
+    description: "Permanently changes the VM's hostname to <code>app-web</code>, identifying it as the web/application server. The change takes effect on next login.",
+    parts: [
+      { text: "sudo", explanation: "run as superuser — hostname changes require root" },
+      { text: "hostnamectl", explanation: "systemd tool to query and change the system hostname" },
+      { text: "set-hostname", explanation: "sub-command that writes the new name to /etc/hostname and updates the running system" },
+      { text: "app-web", explanation: "the new hostname — makes it immediately clear which VM you're on when you have multiple terminals open" },
+    ],
+    example: "# No output on success — re-login to see the updated prompt:\nvagrant@app-web:~$",
+    why: "When SSHing into multiple VMs simultaneously, a meaningful hostname in the shell prompt prevents you from running commands on the wrong machine.",
+  },
+
+  {
+    id: 502,
+    section: "app-web",
+    sectionTitle: "Web Server Setup",
+    commandTitle: "Install Node.js and Git",
+    command: "curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash - && sudo apt-get install -y nodejs git",
+    searchTerms: "nodejs node npm git install apt nodesource web server ubuntu",
+    description: "Adds the NodeSource repository for Node.js 18 LTS, then installs the <code>nodejs</code> package (which includes <code>npm</code>) and <code>git</code> for cloning the project repository.",
+    parts: [
+      { text: "curl -fsSL … | sudo bash -", explanation: "downloads and executes the NodeSource setup script, which registers the Node.js 18 apt repo — the version in Ubuntu's default repos is too old" },
+      { text: "sudo apt-get install -y nodejs", explanation: "installs Node.js and npm from the newly added NodeSource repo" },
+      { text: "git", explanation: "version control tool — used to clone the project repository into the VM" },
+    ],
+    example: "Fetching Node.js 18 LTS...\nSetting up nodejs (18.20.4-1nodesource1) ...\n$ node --version\nv18.20.4\n$ npm --version\n10.7.0",
+    why: "Node.js 18 LTS is the current long-term support release. Installing via NodeSource guarantees you get the upstream version with full ARM64 support, not the outdated package in Ubuntu's default repos.",
+  },
+
+  {
+    id: 503,
+    section: "app-web",
+    sectionTitle: "Web Server Setup",
+    commandTitle: "Clone the project repository",
+    command: "git clone https://github.com/your-org/dev-env /var/www/project",
+    searchTerms: "git clone github project repo clone var www",
+    description: "Clones the application repository from GitHub directly into <code>/var/www/project</code> — the same path the Vagrantfile's synced folder maps to. If you're using the synced folder approach, this step is skipped; cloning is the alternative for CI or environments without a host mount.",
+    parts: [
+      { text: "git clone", explanation: "creates a full local copy of the remote repository including its full history" },
+      { text: "https://github.com/your-org/dev-env", explanation: "the remote repository URL — replace with your actual project repo" },
+      { text: "/var/www/project", explanation: "destination path inside the VM — matches the synced_folder guest path so tools find files in the same location either way" },
+    ],
+    example: "Cloning into '/var/www/project'...\nremote: Counting objects: 142, done.\nReceiving objects: 100% (142/142), done.\n$ ls /var/www/project\npackage.json  src/  README.md",
+    why: "Keeping the clone target consistent with the synced folder path means the app config, scripts, and systemd service file all reference the same location regardless of how the code got there.",
+  },
+
+  {
+    id: 504,
+    section: "app-web",
+    sectionTitle: "Web Server Setup",
+    commandTitle: "Install app dependencies and create systemd service",
+    command: "cd /var/www/project && npm install && sudo cp app-web.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable app-web && sudo systemctl start app-web",
+    searchTerms: "npm install systemctl enable start node service systemd daemon app-web",
+    description: "Installs the project's npm dependencies, registers the Node.js app as a systemd service so it starts on boot, reloads the daemon to pick up the new unit file, then enables and starts the service immediately.",
+    parts: [
+      { text: "npm install", explanation: "reads package.json and downloads all declared dependencies into node_modules/" },
+      { text: "sudo cp app-web.service /etc/systemd/system/", explanation: "places the systemd unit file where systemd can find it — the file lives in the repo so it's version-controlled" },
+      { text: "sudo systemctl daemon-reload", explanation: "tells systemd to re-scan unit files after adding or modifying one — required before enable/start will recognise the new service" },
+      { text: "sudo systemctl enable app-web", explanation: "creates a symlink so systemd starts the Node.js app automatically on every boot" },
+      { text: "sudo systemctl start app-web", explanation: "starts the service immediately without requiring a reboot" },
+    ],
+    example: "added 97 packages in 4.2s\nCreated symlink /etc/systemd/system/multi-user.target.wants/app-web.service\n\n$ sudo systemctl status app-web\n● app-web.service - Node.js Web Application\n   Active: active (running) since ...",
+    why: "Running the app as a systemd service gives you automatic restarts on crash, boot-time startup, and standard log integration via journald — without a third-party process manager like pm2.",
+  },
+
+  {
+    id: 505,
+    section: "app-web",
+    sectionTitle: "Web Server Setup",
+    commandTitle: "Verify the app is reachable from your Mac",
+    command: "curl http://localhost:3000/api/health",
+    searchTerms: "curl localhost 3000 test verify node express api health check port forward",
+    description: "Runs this command <strong>on your Mac</strong> (not inside the VM). Thanks to port forwarding in the Vagrantfile, traffic to <code>localhost:3000</code> on your Mac is transparently tunnelled to port 3000 inside <code>app-web</code>.",
+    parts: [
+      { text: "curl", explanation: "command-line HTTP client — available by default on macOS" },
+      { text: "http://localhost:3000/api/health", explanation: "hits the health-check endpoint on your Mac's loopback interface — Vagrant's port forward delivers it to the VM's Express server" },
+    ],
+    example: "# Run on your Mac:\n$ curl http://localhost:3000/api/health\n{\"status\":\"ok\",\"db\":\"connected\"}\n\n# Or open in your Mac browser:\n# http://localhost:3000",
+    why: "This is the payoff of port forwarding — your Mac browser and API clients talk to the Linux VM as if it were running locally. No IP address, no VPN, no network config to remember.",
+  },
+
+  // ── Part 6: Database Server Setup (app-db) ───────────────────────────────
+
+  {
+    id: 601,
+    section: "app-db",
+    sectionTitle: "Database Server Setup",
+    commandTitle: "Set hostname to app-db",
+    command: "sudo hostnamectl set-hostname app-db",
+    searchTerms: "hostname hostnamectl set rename machine app-db database server",
+    description: "Permanently renames this VM to <code>app-db</code>, identifying it as the dedicated database server.",
+    parts: [
+      { text: "sudo hostnamectl set-hostname", explanation: "systemd command to change the system hostname persistently — writes to /etc/hostname" },
+      { text: "app-db", explanation: "the new hostname — pairs with app-web to make the two-VM architecture immediately obvious from the shell prompt" },
+    ],
+    example: "# Re-login to see the updated prompt:\nvagrant@app-db:~$",
+    why: "With two VMs running in parallel, a clear hostname in the prompt is the first line of defence against running a destructive command on the wrong machine.",
+  },
+
+  {
+    id: 602,
+    section: "app-db",
+    sectionTitle: "Database Server Setup",
+    commandTitle: "Install PostgreSQL server and client",
+    command: "sudo apt-get install -y postgresql postgresql-contrib",
+    searchTerms: "postgresql postgres install apt-get database server client ubuntu",
+    description: "Installs the PostgreSQL server daemon and its companion <code>postgresql-contrib</code> package, which adds commonly used extensions like <code>uuid-ossp</code>, <code>pg_stat_statements</code>, and <code>hstore</code>.",
+    parts: [
+      { text: "sudo apt-get install -y", explanation: "installs packages non-interactively — -y confirms all prompts automatically" },
+      { text: "postgresql", explanation: "the PostgreSQL server daemon — Ubuntu's apt repo ships the current stable release" },
+      { text: "postgresql-contrib", explanation: "additional extensions and utilities that ship separately from the core — required for uuid-ossp and other commonly used modules" },
+    ],
+    example: "Setting up postgresql (16+246) ...\nCreating new PostgreSQL cluster 16/main ...\n\n$ psql --version\npsql (PostgreSQL) 16.3",
+    why: "Unlike CentOS/RHEL, Ubuntu's apt repos ship a reasonably current PostgreSQL version with ARM64 support out of the box — no third-party repo needed.",
+  },
+
+  {
+    id: 603,
+    section: "app-db",
+    sectionTitle: "Database Server Setup",
+    commandTitle: "Create database user and database",
+    command: 'sudo -u postgres psql -c "CREATE USER appuser WITH PASSWORD \'secret\';" && sudo -u postgres psql -c "CREATE DATABASE appdb OWNER appuser;"',
+    searchTerms: "postgres psql create user database role password owner appuser appdb",
+    description: "Connects to PostgreSQL as the <code>postgres</code> superuser and runs two SQL statements: one to create a dedicated application role with a password, and one to create the application database owned by that role.",
+    parts: [
+      { text: "sudo -u postgres", explanation: "runs the following command as the postgres OS user — the default superuser account created during installation" },
+      { text: 'psql -c "…"', explanation: "executes a single SQL statement and exits — no interactive shell needed" },
+      { text: "CREATE USER appuser WITH PASSWORD 'secret'", explanation: "creates the PostgreSQL role the Node.js app will use to authenticate — never use the postgres superuser from application code" },
+      { text: "CREATE DATABASE appdb OWNER appuser", explanation: "creates the application database and gives full ownership to appuser — scopes all permissions to this database only" },
+    ],
+    example: "CREATE ROLE\nCREATE DATABASE\n\n# Verify:\n$ sudo -u postgres psql -c '\\l'\n   Name    |  Owner\n-----------+----------\n appdb     | appuser",
+    why: "Applications should never connect as the postgres superuser. A dedicated role with only the permissions it needs limits the blast radius of a compromised connection string — standard security practice.",
+  },
+
+  {
+    id: 604,
+    section: "app-db",
+    sectionTitle: "Database Server Setup",
+    commandTitle: "Allow remote connections in pg_hba.conf",
+    command: "sudo bash -c \"echo 'host  appdb  appuser  0.0.0.0/0  md5' >> /etc/postgresql/16/main/pg_hba.conf\" && sudo systemctl reload postgresql",
+    searchTerms: "pg_hba.conf postgres remote connection md5 host authentication allow",
+    description: "Appends a host-based authentication rule to <code>pg_hba.conf</code> that allows <code>appuser</code> to connect to <code>appdb</code> from any IP using a password, then reloads PostgreSQL to apply the change without a full restart.",
+    parts: [
+      { text: "echo 'host  appdb  appuser  0.0.0.0/0  md5'", explanation: "the HBA rule: type (host=TCP), database, user, CIDR range (any IP), auth method (md5 password)" },
+      { text: ">> /etc/postgresql/16/main/pg_hba.conf", explanation: "appends the rule — Ubuntu keeps pg_hba.conf here, unlike RHEL's /var/lib/pgsql path" },
+      { text: "sudo systemctl reload postgresql", explanation: "sends SIGHUP to the postgres process, causing it to re-read pg_hba.conf without dropping active connections" },
+    ],
+    example: "# Verify the rule was added:\n$ sudo tail -3 /etc/postgresql/16/main/pg_hba.conf\nhost  appdb  appuser  0.0.0.0/0  md5\n\n# Test from app-web VM:\n$ psql -h <app-db-ip> -U appuser -d appdb\nappdb=>",
+    why: "PostgreSQL rejects all remote connections by default. pg_hba.conf is the access control list that decides who can connect, from where, and how they must authenticate — the firewall of the database layer.",
+  },
+
+  {
+    id: 605,
+    section: "app-db",
+    sectionTitle: "Database Server Setup",
+    commandTitle: "Run the database setup script",
+    command: "psql -U appuser -d appdb -f db_setup.sql",
+    searchTerms: "psql run script sql file database setup schema seed postgres",
+    description: "Connects to <code>appdb</code> as <code>appuser</code> and executes the SQL setup script, creating the schema, tables, indexes, and any seed data the application needs to start.",
+    parts: [
+      { text: "psql", explanation: "PostgreSQL interactive terminal — used here in batch mode" },
+      { text: "-U appuser", explanation: "connect as the application role — tests the same credentials the Node.js app will use" },
+      { text: "-d appdb", explanation: "the target database to connect to" },
+      { text: "-f db_setup.sql", explanation: "reads and executes SQL from this file in one pass — the standard way to run repeatable schema migrations" },
+    ],
+    example: "CREATE TABLE\nCREATE INDEX\nINSERT 0 5\n\n# Verify:\n$ psql -U appuser -d appdb -c '\\dt'\n        List of relations\n Schema |   Name   | Type\n--------+----------+-------\n public | users    | table\n public | sessions | table",
+    why: "Using <code>-f</code> to feed a file is the standard way to execute a batch of SQL statements repeatably — the same script can be re-run in CI or against a fresh database with identical results.",
+  },
+
+  // ── Part 7: Day-to-Day Commands ───────────────────────────────────────────
+
+  {
+    id: 701,
     section: "daily",
     sectionTitle: "Day-to-Day Commands",
     commandTitle: "Reload the VM after Vagrantfile changes",
@@ -154,14 +349,14 @@ window.commandData = [
     searchTerms: "vagrant reload restart apply vagrantfile changes config port sync",
     description: "Gracefully restarts the VM and re-applies the Vagrantfile — picks up new port forwards, synced folder changes, and resource config without destroying the VM or its installed packages.",
     parts: [
-      { text: "vagrant reload", explanation: "equivalent to vagrant halt followed by vagrant up — preserves the VM's disk state" },
+      { text: "vagrant reload", explanation: "equivalent to vagrant halt followed by vagrant up — preserves the VM's disk state and everything installed inside it" },
     ],
     example: "==> default: Attempting graceful shutdown of VM...\n==> default: Booting VM...\n==> default: Forwarding ports...\n    default: 3000 (guest) => 3000 (host)\n    default: 5432 (guest) => 5432 (host)\n==> default: Machine booted and ready!",
     why: "Use reload any time you change port forwarding, memory allocation, or synced folder config. It is faster than destroy + up and keeps everything you installed inside the VM intact.",
   },
 
   {
-    id: 502,
+    id: 702,
     section: "daily",
     sectionTitle: "Day-to-Day Commands",
     commandTitle: "Suspend and resume the VM",
@@ -177,7 +372,7 @@ window.commandData = [
   },
 
   {
-    id: 503,
+    id: 703,
     section: "daily",
     sectionTitle: "Day-to-Day Commands",
     commandTitle: "Check VM status",
@@ -188,12 +383,12 @@ window.commandData = [
       { text: "vagrant status", explanation: "reads the .vagrant/ directory in the current folder and reports that VM's state" },
       { text: "vagrant global-status", explanation: "queries Vagrant's global index (~/.vagrant.d/data/machine-index/) — shows all VMs regardless of current directory" },
     ],
-    example: "$ vagrant status\nCurrent machine states:\ndefault                   running (parallels)\n\n$ vagrant global-status\nid       name     provider    state    directory\n-----------------------------------------------------------\na1b2c3d  default  parallels   running  /Users/you/my-dev-env\ne4f5a6b  default  parallels   saved    /Users/you/other-project",
+    example: "$ vagrant status\nCurrent machine states:\napp-web                   running (parallels)\napp-db                    saved (parallels)\n\n$ vagrant global-status\nid       name     provider    state    directory\n-----------------------------------------------------------\na1b2c3d  app-web  parallels   running  /Users/you/dev-env\ne4f5a6b  app-db   parallels   saved    /Users/you/dev-env",
     why: "global-status is the answer to 'which VMs are eating my RAM right now?' — especially useful when you have a suspended VM from last week and wonder why your Mac is sluggish.",
   },
 
   {
-    id: 504,
+    id: 704,
     section: "daily",
     sectionTitle: "Day-to-Day Commands",
     commandTitle: "Destroy the VM completely",
@@ -204,29 +399,30 @@ window.commandData = [
       { text: "vagrant destroy", explanation: "deletes the VM's virtual disk and removes it from Parallels — reclaims disk space immediately" },
       { text: "--force", explanation: "skips the 'Are you sure?' confirmation prompt — useful in scripts" },
     ],
-    example: "==> default: Stopping the machine...\n==> default: Deleting the machine...\n\n# Start fresh:\n$ vagrant up --provider parallels\n==> default: Machine booted and ready!\n# Brand new VM, fully provisioned",
-    why: "Destroy is the nuclear reset button. If the VM gets into a bad state, destroy + up gives you a provably clean environment in minutes. This is the power of treating infrastructure as disposable code rather than a precious snowflake.",
+    example: "==> app-web: Stopping the machine...\n==> app-web: Deleting the machine...\n==> app-db: Stopping the machine...\n==> app-db: Deleting the machine...\n\n# Start fresh:\n$ vagrant up --provider parallels\n==> app-web: Machine booted and ready!\n==> app-db: Machine booted and ready!",
+    why: "Destroy is the nuclear reset button. If a VM gets into a bad state, destroy + up gives you a provably clean environment in minutes. This is the power of treating infrastructure as disposable code rather than a precious snowflake.",
   },
 
-  // ── Part 6: Full Vagrantfile Example ─────────────────────────────────────
+  // ── Part 8: Complete Vagrantfile ─────────────────────────────────────────
 
   {
-    id: 601,
+    id: 801,
     section: "vagrantfile",
     sectionTitle: "Complete Vagrantfile",
-    commandTitle: "Full Vagrantfile for Node.js + PostgreSQL on M1",
-    command: 'cat Vagrantfile',
-    searchTerms: "vagrantfile complete full example node postgres m1 arm64 parallels synced port provision",
-    description: "A complete, production-ready Vagrantfile for Apple Silicon that wires together everything from the previous steps: ARM64 box, Parallels provider with 8 GB RAM, synced folder, port forwarding for Node.js and PostgreSQL, and a shell provisioner that installs the full stack automatically.",
+    commandTitle: "Full two-VM Vagrantfile: app-web + app-db on M1",
+    command: "cat Vagrantfile",
+    searchTerms: "vagrantfile complete full example node postgres m1 arm64 parallels synced port provision two vm multi machine app-web app-db",
+    description: "The complete Vagrantfile that ties together everything from this module. It defines <strong>two named machines</strong> — <code>app-web</code> (Node.js) and <code>app-db</code> (PostgreSQL) — each with their own hostname, resources, port forwarding, and inline provisioner. One <code>vagrant up --provider parallels</code> builds the entire stack from scratch.",
     parts: [
-      { text: 'config.vm.box = "bento/ubuntu-22.04-arm64"', explanation: "the ARM64 base image — mandatory for native performance on M1/M2" },
-      { text: 'config.vm.synced_folder ".", "/var/www/project"', explanation: "your Mac project root appears inside the VM at this path — edit on Mac, run in Linux" },
-      { text: 'config.vm.network "forwarded_port"', explanation: "one line per port — lets Mac-side browsers and DB tools reach VM services transparently" },
-      { text: 'prl.memory = 8192', explanation: "8 GB RAM — enough for Node.js app + PostgreSQL + background services without taxing the Mac" },
-      { text: 'config.vm.provision "shell"', explanation: "runs once on first boot — installs Node.js, Postgres, creates DB user and database" },
+      { text: 'config.vm.define "app-web"', explanation: "declares a named machine — you can target it individually with 'vagrant ssh app-web' or 'vagrant reload app-web'" },
+      { text: 'config.vm.define "app-db"', explanation: "declares the second named machine — both spin up together on 'vagrant up' unless you specify a name" },
+      { text: 'config.vm.box = "bento/ubuntu-22.04-arm64"', explanation: "the ARM64 base image — mandatory for native performance on M1/M2, shared by both VMs" },
+      { text: 'web.vm.network "private_network"', explanation: "assigns a static private IP to each VM so they can talk to each other — app-web connects to app-db on this address" },
+      { text: "prl.memory / prl.cpus", explanation: "resource allocation per VM — web gets more CPU for Node.js, db gets more RAM for Postgres shared_buffers" },
+      { text: 'config.vm.provision "shell"', explanation: "each VM gets its own provisioner block — app-web installs Node.js, app-db installs PostgreSQL and creates the database" },
     ],
-    example: "Vagrant.configure('2') do |config|\n\n  config.vm.box = 'bento/ubuntu-22.04-arm64'\n\n  # Resources\n  config.vm.provider 'parallels' do |prl|\n    prl.name   = 'node-postgres-dev'\n    prl.memory = 8192\n    prl.cpus   = 4\n  end\n\n  # Code sync\n  config.vm.synced_folder '.', '/var/www/project'\n\n  # Port forwarding\n  config.vm.network 'forwarded_port', guest: 3000, host: 3000  # Express\n  config.vm.network 'forwarded_port', guest: 5432, host: 5432  # PostgreSQL\n\n  # Provisioning\n  config.vm.provision 'shell', inline: <<-SHELL\n    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -\n    apt-get install -y nodejs postgresql postgresql-contrib\n    sudo -u postgres psql -c \"CREATE USER devuser WITH PASSWORD 'secret';\"\n    sudo -u postgres psql -c \"CREATE DATABASE appdb OWNER devuser;\"\n    cd /var/www/project && npm install\n  SHELL\n\nend",
-    why: "This Vagrantfile is the single source of truth for the environment. Commit it to your repo and every developer — on any machine with Vagrant + Parallels — gets an identical Linux box with zero manual setup. The Mac host stays completely free of Node versions, global npm packages, and Postgres installations.",
+    example: "Vagrant.configure('2') do |config|\n\n  config.vm.box = 'bento/ubuntu-22.04-arm64'\n\n  # ── app-web: Node.js application server ──\n  config.vm.define 'app-web' do |web|\n    web.vm.hostname = 'app-web'\n\n    web.vm.provider 'parallels' do |prl|\n      prl.name   = 'app-web'\n      prl.memory = 4096\n      prl.cpus   = 2\n    end\n\n    web.vm.network 'private_network', ip: '192.168.56.10'\n    web.vm.network 'forwarded_port',  guest: 3000, host: 3000\n    web.vm.synced_folder '.', '/var/www/project'\n\n    web.vm.provision 'shell', inline: <<-SHELL\n      hostnamectl set-hostname app-web\n      curl -fsSL https://deb.nodesource.com/setup_18.x | bash -\n      apt-get install -y nodejs git\n      cd /var/www/project && npm install\n      cp app-web.service /etc/systemd/system/\n      systemctl daemon-reload\n      systemctl enable app-web\n      systemctl start app-web\n    SHELL\n  end\n\n  # ── app-db: PostgreSQL database server ──\n  config.vm.define 'app-db' do |db|\n    db.vm.hostname = 'app-db'\n\n    db.vm.provider 'parallels' do |prl|\n      prl.name   = 'app-db'\n      prl.memory = 4096\n      prl.cpus   = 2\n    end\n\n    db.vm.network 'private_network', ip: '192.168.56.20'\n    db.vm.network 'forwarded_port',  guest: 5432, host: 5432\n\n    db.vm.provision 'shell', inline: <<-SHELL\n      hostnamectl set-hostname app-db\n      apt-get update\n      apt-get install -y postgresql postgresql-contrib\n      sudo -u postgres psql -c \"CREATE USER appuser WITH PASSWORD 'secret';\"\n      sudo -u postgres psql -c \"CREATE DATABASE appdb OWNER appuser;\"\n      echo 'host  appdb  appuser  0.0.0.0/0  md5' >> /etc/postgresql/16/main/pg_hba.conf\n      systemctl reload postgresql\n    SHELL\n  end\n\nend",
+    why: "This Vagrantfile is the single source of truth for the entire development environment. Commit it to your repo and any developer — on any Mac with Vagrant + Parallels — gets an identical two-VM stack with one command. The Mac host stays completely clean: no Node versions, no global npm packages, no Postgres installation, no port conflicts with other projects.",
   },
 
 ];

@@ -10,7 +10,7 @@
 }
 
 #playground-main .inner {
-  max-width: 820px;
+  max-width: 960px;
   margin: 0 auto;
 }
 
@@ -68,7 +68,7 @@
 /* ── Module card grid ────────────────────────────────────────────────────── */
 .welcome-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 2rem;
 }
@@ -185,5 +185,13 @@
 /* ── Mobile adjustments ──────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   #playground-main { padding: 1.5rem 1rem; }
-  .welcome-grid { grid-template-columns: 1fr 1fr; }
+  .welcome-grid {
+    grid-template-columns: repeat(3, 1fr); /* wide: 3 col */
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-grid {
+    grid-template-columns: repeat(3, 1fr); /* mobile: 1 col */
+  }
 }

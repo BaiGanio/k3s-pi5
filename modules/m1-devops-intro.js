@@ -1,5 +1,5 @@
 // modules/m1-devops-intro.js
-// Practice M1: Introduction to DevOps
+// M1: Introduction to DevOps
 
 window.commandData = [
 

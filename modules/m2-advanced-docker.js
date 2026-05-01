@@ -1,5 +1,5 @@
-// modules/m3-advanced-docker.js
-// Practice M3: Advanced Docker
+// modules/m2-advanced-docker.js
+// M2: Containers
 
 window.commandData = [
 

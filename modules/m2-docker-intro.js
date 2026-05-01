@@ -1,5 +1,5 @@
 // modules/m2-docker-intro.js
-// Practice M2: Introduction to Docker
+// M2: Containers
 
 window.commandData = [
 
