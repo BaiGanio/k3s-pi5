@@ -91,5 +91,48 @@ window.commandData = [
     ],
     example: "# Verify it worked:\nkubectl get nodes\n# NAME   STATUS   ROLES                  AGE   VERSION\n# pi5    Ready    control-plane,master   5d    v1.29.x+k3s1\n\n# If you get 'permission denied' on the config file itself:\nls -la ~/.kube/config\n# Should show: -rw------- 1 pi pi",
     why: "Every kubectl command with sudo runs as root and writes root-owned files to your home directory. This one-time step prevents permission headaches across all future sessions."
+  },
+
+  {
+    id: 801, section: "quickref", sectionTitle: "kubectl Quick Reference",
+    commandTitle: "Scale a Deployment",
+    command: "kubectl scale deployment node-api --replicas=2",
+    searchTerms: "scale deployment replicas up down kubectl",
+    description: "Instantly scales a Deployment to the specified number of pod replicas. Set to 0 to pause an app without deleting it.",
+    parts: [
+      { text: "kubectl scale deployment", explanation: "changes the desired replica count for a Deployment" },
+      { text: "node-api",                 explanation: "the name of the Deployment to scale" },
+      { text: "--replicas=2",             explanation: "the new desired number of running pods" }
+    ],
+    example: "deployment.apps/node-api scaled\n\n# Verify:\nkubectl get pods -l app=node-api\n# NAME             READY   STATUS\n# node-api-abc12   1/1     Running\n# node-api-def34   1/1     Running",
+    why: "On the Pi 5, more than 2 replicas of a Node.js app will start competing for RAM. Scale up for load testing, scale to 0 to free resources."
+  },
+  {
+    id: 802, section: "quickref", sectionTitle: "kubectl Quick Reference",
+    commandTitle: "Shell Into a Running Pod",
+    command: "kubectl exec -it <pod-name> -- /bin/sh",
+    searchTerms: "exec shell sh bash interactive pod debug kubectl",
+    description: "Opens an interactive shell inside a running container. Essential for debugging — check environment variables, test DB connectivity, inspect the filesystem.",
+    parts: [
+      { text: "kubectl exec -it", explanation: "executes a command interactively (-i) with a TTY (-t)" },
+      { text: "<pod-name>",       explanation: "get the name from 'kubectl get pods'" },
+      { text: "-- /bin/sh",       explanation: "the command to run — /bin/sh works in Alpine images (/bin/bash won't)" }
+    ],
+    example: "# Inside the node-api pod:\nenv | grep DB           # check DB env vars are injected\nwget -qO- http://postgres:5432  # test postgres service DNS\nnode -e \"console.log(process.env.DATABASE_URL)\"",
+    why: "Environment variables visible inside the pod may differ from what you expect — this is the definitive way to confirm your ConfigMap and Secret are mounted correctly."
+  },
+  {
+    id: 803, section: "quickref", sectionTitle: "kubectl Quick Reference",
+    commandTitle: "Rolling Update — Change Image",
+    command: "kubectl set image deployment/node-api node-api=node:20-alpine",
+    searchTerms: "set image deployment rolling update rollout kubectl",
+    description: "Updates the container image for a Deployment. K3s performs a rolling update — starts new pods before terminating old ones, so there's no downtime.",
+    parts: [
+      { text: "kubectl set image",        explanation: "updates the image field in the Deployment spec" },
+      { text: "deployment/node-api",      explanation: "the Deployment to update" },
+      { text: "node-api=node:20-alpine",  explanation: "container-name=new-image-tag format" }
+    ],
+    example: "deployment.apps/node-api image updated\n\n# Watch the rollout:\nkubectl rollout status deployment/node-api\n# Waiting for rollout to finish: 1 old replicas are pending termination\n# deployment \"node-api\" successfully rolled out\n\n# Roll back if something went wrong:\nkubectl rollout undo deployment/node-api",
+    why: "rollout undo is your escape hatch. Always verify the new image works in a test namespace before updating production."
   }
 ];
