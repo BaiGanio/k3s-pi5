@@ -94,6 +94,133 @@ code,
   filter: none;
 }
 
+/* ── Prose block ─────────────────────────────────────────────────────────── */
+.module-prose {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Clickable header (only when block has a title) */
+.module-prose-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.85rem 1.25rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.module-prose-header:hover {
+  background: var(--bg-surface);
+}
+
+.module-prose-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.module-prose-chevron {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.module-prose.collapsed .module-prose-chevron {
+  transform: rotate(90deg);
+}
+
+/* Animated body */
+.module-prose-body {
+  overflow: hidden;
+  max-height: 3000px;
+  transition: max-height 0.25s ease;
+}
+
+.module-prose.collapsed .module-prose-body {
+  max-height: 0;
+}
+
+.module-prose-body-inner {
+  padding: 0 1.25rem 1.25rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.module-prose-body-inner p:last-child,
+.module-prose-body-inner ul:last-child,
+.module-prose-body-inner ol:last-child {
+  margin-bottom: 0;
+}
+
+/* Plain prose (no title, no toggle) */
+.module-prose-plain {
+  padding: 1.25rem 1.5rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.module-prose-plain p:last-child,
+.module-prose-plain ul:last-child,
+.module-prose-plain ol:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Note / callout block ────────────────────────────────────────────────── */
+.module-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border-left: 4px solid;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.module-note-icon {
+  flex-shrink: 0;
+  line-height: 1.6;
+}
+
+.module-note-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.module-note code {
+  color: inherit;
+  background: rgba(0, 0, 0, 0.07);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.module-note--info {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  border-color: var(--text-accent);
+}
+
+.module-note--tip {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.module-note--warning {
+  background: #fffbeb;
+  color: #78350f;
+  border-color: #f59e0b;
+}
+
 /* ── Section badge (numbered circle) ────────────────────────────────────── */
 .section-badge {
   width: 28px;
