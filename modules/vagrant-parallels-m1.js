@@ -8,7 +8,7 @@ window.commandData = [
   {
     id: 101,
     section: "plugin",
-    sectionTitle: "Part 1 – Install the Parallels Plugin",
+    sectionTitle: "Install the Parallels Plugin",
     commandTitle: "Install vagrant-parallels plugin",
     command: "vagrant plugin install vagrant-parallels",
     searchTerms: "vagrant plugin install parallels provider arm64 m1 apple silicon",
@@ -26,8 +26,8 @@ window.commandData = [
   {
     id: 201,
     section: "init",
-    sectionTitle: "Part 2 – Initialise a Project",
-    commandTitle: "Create a project folder and initialise a box",
+    sectionTitle: "Initialize a Project",
+    commandTitle: "Create a project folder and initialize a box",
     command: "mkdir my-dev-env && cd my-dev-env && vagrant init bento/ubuntu-22.04-arm64",
     searchTerms: "vagrant init bento ubuntu arm64 vagrantfile mkdir project folder",
     description: "Creates a new project directory, enters it, and generates a <code>Vagrantfile</code> pre-configured to use the <code>bento/ubuntu-22.04-arm64</code> box — a clean, minimal Ubuntu 22.04 image compiled for ARM64. This is the critical detail on Apple Silicon: you must use an ARM64 box, not an x86_64 one.",
@@ -45,7 +45,7 @@ window.commandData = [
   {
     id: 301,
     section: "startup",
-    sectionTitle: "Part 3 – Start the VM",
+    sectionTitle: "Start the VM",
     commandTitle: "Boot the VM with the Parallels provider",
     command: "vagrant up --provider parallels",
     searchTerms: "vagrant up parallels provider start boot download box arm64",
@@ -61,7 +61,7 @@ window.commandData = [
   {
     id: 302,
     section: "startup",
-    sectionTitle: "Part 3 – Start the VM",
+    sectionTitle: "Start the VM",
     commandTitle: "SSH into the running VM",
     command: "vagrant ssh",
     searchTerms: "vagrant ssh shell login terminal vm connect",
@@ -78,7 +78,7 @@ window.commandData = [
   {
     id: 401,
     section: "config",
-    sectionTitle: "Part 4 – Configure the Vagrantfile",
+    sectionTitle: "Configure the Vagrantfile",
     commandTitle: "Sync your project folder into the VM",
     command: 'config.vm.synced_folder ".", "/var/www/project"',
     searchTerms: "vagrant synced_folder shared folder code mac linux vm sync edit",
@@ -95,7 +95,7 @@ window.commandData = [
   {
     id: 402,
     section: "config",
-    sectionTitle: "Part 4 – Configure the Vagrantfile",
+    sectionTitle: "Configure the Vagrantfile",
     commandTitle: "Forward guest ports to the Mac",
     command: 'config.vm.network "forwarded_port", guest: 3000, host: 3000\nconfig.vm.network "forwarded_port", guest: 5432, host: 5432',
     searchTerms: "vagrant forwarded_port port forward network guest host 3000 5432 node postgres",
@@ -111,7 +111,7 @@ window.commandData = [
   {
     id: 403,
     section: "config",
-    sectionTitle: "Part 4 – Configure the Vagrantfile",
+    sectionTitle: "Configure the Vagrantfile",
     commandTitle: "Allocate RAM and CPU cores to the VM",
     command: 'config.vm.provider "parallels" do |prl|\n  prl.memory = 8192\n  prl.cpus = 4\nend',
     searchTerms: "vagrant parallels provider memory ram cpu cores performance config",
@@ -128,7 +128,7 @@ window.commandData = [
   {
     id: 404,
     section: "config",
-    sectionTitle: "Part 4 – Configure the Vagrantfile",
+    sectionTitle: "Configure the Vagrantfile",
     commandTitle: "Provision Node.js and PostgreSQL automatically",
     command: 'config.vm.provision "shell", inline: <<-SHELL\n  curl -fsSL https://deb.nodesource.com/setup_18.x | bash -\n  apt-get install -y nodejs postgresql postgresql-contrib\n  sudo -u postgres psql -c "CREATE USER devuser WITH PASSWORD \'secret\';"\n  sudo -u postgres psql -c "CREATE DATABASE appdb OWNER devuser;"\nSHELL',
     searchTerms: "vagrant provision shell nodejs postgresql apt-get inline script setup",
@@ -148,7 +148,7 @@ window.commandData = [
   {
     id: 501,
     section: "daily",
-    sectionTitle: "Part 5 – Day-to-Day Commands",
+    sectionTitle: "Day-to-Day Commands",
     commandTitle: "Reload the VM after Vagrantfile changes",
     command: "vagrant reload",
     searchTerms: "vagrant reload restart apply vagrantfile changes config port sync",
@@ -163,7 +163,7 @@ window.commandData = [
   {
     id: 502,
     section: "daily",
-    sectionTitle: "Part 5 – Day-to-Day Commands",
+    sectionTitle: "Day-to-Day Commands",
     commandTitle: "Suspend and resume the VM",
     command: "vagrant suspend && vagrant resume",
     searchTerms: "vagrant suspend resume sleep save state fast pause",
@@ -179,7 +179,7 @@ window.commandData = [
   {
     id: 503,
     section: "daily",
-    sectionTitle: "Part 5 – Day-to-Day Commands",
+    sectionTitle: "Day-to-Day Commands",
     commandTitle: "Check VM status",
     command: "vagrant status && vagrant global-status",
     searchTerms: "vagrant status global running stopped saved machines list all",
@@ -195,7 +195,7 @@ window.commandData = [
   {
     id: 504,
     section: "daily",
-    sectionTitle: "Part 5 – Day-to-Day Commands",
+    sectionTitle: "Day-to-Day Commands",
     commandTitle: "Destroy the VM completely",
     command: "vagrant destroy --force",
     searchTerms: "vagrant destroy force delete remove vm disk clean reset",
@@ -213,7 +213,7 @@ window.commandData = [
   {
     id: 601,
     section: "vagrantfile",
-    sectionTitle: "Part 6 – Complete Vagrantfile",
+    sectionTitle: "Complete Vagrantfile",
     commandTitle: "Full Vagrantfile for Node.js + PostgreSQL on M1",
     command: 'cat Vagrantfile',
     searchTerms: "vagrantfile complete full example node postgres m1 arm64 parallels synced port provision",
