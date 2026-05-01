@@ -9,7 +9,15 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="index.css" />
+
+  <!-- Design tokens first — everything else reads from these variables -->
+  <link rel="stylesheet" href="styles/index.css" />
+  <!-- Reusable UI components: cards, code blocks, badges, command parts -->
+  <link rel="stylesheet" href="styles/components.css" />
+  <!-- Sidebar: layout, collapse, accordion groups, module buttons -->
+  <link rel="stylesheet" href="styles/sidebar.css" />
+  <!-- Main content area, module header, empty state -->
+  <link rel="stylesheet" href="styles/playground.css" />
 </head>
 
 <body>
@@ -26,8 +34,7 @@
       <div class="d-flex align-items-center gap-1">
         <a class="nav-link text-secondary px-2" href="index.html" style="font-size:0.88rem;">Commands</a>
         <span class="text-secondary" style="font-size:0.8rem;">|</span>
-        <a class="nav-link text-white px-2 fw-semibold" href="playground.html" style="font-size:0.88rem;">🧪
-          Playground</a>
+        <a class="nav-link text-white px-2 fw-semibold" href="playground.html" style="font-size:0.88rem;">🧪 Playground</a>
       </div>
     </div>
   </nav>
@@ -35,11 +42,9 @@
   <!-- ── App shell ───────────────────────────────────────────────────────────── -->
   <div class="playground-shell">
 
-    <!-- Sidebar -->
+    <!-- Sidebar — populated by playground.js -->
     <nav id="sidebar">
-      <div id="sidebar-nav">
-        <!-- Populated by playground.js -->
-      </div>
+      <div id="sidebar-nav"></div>
     </nav>
 
     <!-- Main content -->
@@ -47,7 +52,7 @@
       <div class="inner">
 
         <!-- Module header — shown after a module loads -->
-        <div id="module-header" class="text-center mb-5" style="display:none;">
+        <div id="module-header" class="mb-5" style="display:none;">
           <h1 class="fw-bold fs-2 mb-1" id="module-title"></h1>
           <p class="text-secondary mb-4" id="module-subtitle"></p>
           <input type="text" id="searchInput" class="form-control mb-3" placeholder="Search commands or concepts…" />
@@ -60,12 +65,8 @@
           <p class="fs-5">No commands match your search.</p>
         </div>
 
-        <!-- Empty state -->
-        <div id="module-empty">
-          <div class="empty-icon">🧪</div>
-          <h4>Pick a module from the sidebar</h4>
-          <p>Select a lab module on the left to explore its commands and explanations.</p>
-        </div>
+        <!-- Welcome / empty state — populated by playground.js -->
+        <div id="module-empty"></div>
 
       </div>
     </main>
@@ -74,7 +75,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="lib/registry.js"></script>
   <script src="lib/playground.js"></script>
-  <script src="index.js"></script>
+  <script src="lib/index.js"></script>
 </body>
 
 </html>

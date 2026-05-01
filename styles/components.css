@@ -1,0 +1,109 @@
+/* components.css — Reusable UI components: cards, code, badges, command parts.
+   Requires: tokens.css */
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-app);
+}
+
+code,
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* ── Command name ────────────────────────────────────────────────────────── */
+.command-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-accent);
+  font-size: 1rem;
+}
+
+/* ── Command part pill ───────────────────────────────────────────────────── */
+.command-part {
+  background: var(--bg-surface);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  display: inline-block;
+  margin: 2px;
+}
+
+/* ── Code example box ────────────────────────────────────────────────────── */
+.example-box {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+/* ── "Why" callout box ───────────────────────────────────────────────────── */
+.why-box {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  border-left: 4px solid var(--text-accent);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* ── Detail label ────────────────────────────────────────────────────────── */
+.detail-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.card {
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.card.border-primary {
+  border-left-width: 4px !important;
+}
+
+/* ── Bootstrap accordion overrides ──────────────────────────────────────── */
+.accordion-button {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.accordion-button:not(.collapsed) {
+  color: var(--text-accent);
+  background: #f0f5ff;
+  box-shadow: none;
+}
+
+.accordion-button::after {
+  filter: none;
+}
+
+/* ── Section badge (numbered circle) ────────────────────────────────────── */
+.section-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--text-accent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}

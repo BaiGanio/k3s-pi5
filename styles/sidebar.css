@@ -1,0 +1,188 @@
+/* sidebar.css — Sidebar layout, collapsible categories, toggle behaviour.
+   Requires: tokens.css */
+
+/* ── Shell that wraps sidebar + main ────────────────────────────────────── */
+.playground-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Sidebar container ───────────────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: var(--navbar-height);
+  height: calc(100vh - var(--navbar-height));
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem 0 2rem;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2f45 transparent;
+  transition: width var(--sidebar-transition),
+              min-width var(--sidebar-transition),
+              opacity var(--sidebar-transition);
+}
+
+#sidebar::-webkit-scrollbar        { width: 4px; }
+#sidebar::-webkit-scrollbar-track  { background: transparent; }
+#sidebar::-webkit-scrollbar-thumb  { background: #2a2f45; border-radius: 2px; }
+
+/* ── Collapsed state (desktop) ───────────────────────────────────────────── */
+#sidebar.collapsed {
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Accordion group wrapper ─────────────────────────────────────────────── */
+.sidebar-group {
+  margin-bottom: 0.25rem;
+}
+
+/* ── Group label / toggle button ─────────────────────────────────────────── */
+.sidebar-group-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0.4rem 1.25rem;
+  color: var(--sidebar-label);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.sidebar-group-label:hover {
+  color: var(--sidebar-item-hover);
+}
+
+.sidebar-group-label .label-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Chevron icon */
+.sidebar-group-label .chevron {
+  font-size: 0.6rem;
+  opacity: 0.6;
+  transition: transform 0.2s ease;
+  /* Unicode chevron — no extra dependency */
+  content: '▾';
+}
+
+.sidebar-group.collapsed .chevron {
+  transform: rotate(-90deg);
+}
+
+/* ── Group items container ───────────────────────────────────────────────── */
+.sidebar-group-items {
+  overflow: hidden;
+  max-height: 1000px; /* large enough; animate down to 0 */
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  opacity: 1;
+}
+
+.sidebar-group.collapsed .sidebar-group-items {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* ── Individual module button ─────────────────────────────────────────────── */
+.sidebar-module-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  text-align: left;
+  padding: 0.55rem 1.25rem 0.55rem 1.5rem;
+  color: var(--sidebar-item);
+  font-size: 0.82rem;
+  font-family: var(--font-sans);
+  line-height: 1.35;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.sidebar-module-btn:hover:not(.disabled) {
+  color: var(--sidebar-item-hover);
+  background: var(--sidebar-hover-bg);
+}
+
+.sidebar-module-btn.active {
+  color: var(--sidebar-item-active);
+  border-left-color: var(--sidebar-active-border);
+  background: var(--sidebar-active-bg);
+  font-weight: 600;
+}
+
+.sidebar-module-btn.disabled {
+  color: var(--sidebar-disabled);
+  cursor: default;
+  font-style: italic;
+}
+
+/* ── Subtitle line inside a module button ────────────────────────────────── */
+.sidebar-module-subtitle {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--sidebar-label);
+  margin-top: 0.15rem;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.sidebar-module-btn.active .sidebar-module-subtitle {
+  color: var(--sidebar-subtitle);
+}
+
+/* ── Navbar toggle button (visible on all sizes now) ─────────────────────── */
+#sidebar-toggle {
+  display: inline-flex; /* always visible — collapses sidebar on desktop too */
+}
+
+/* ── Mobile: sidebar slides in as overlay ────────────────────────────────── */
+@media (max-width: 768px) {
+  #sidebar {
+    position: fixed;
+    top: var(--navbar-height);
+    left: -280px;
+    height: calc(100vh - var(--navbar-height));
+    z-index: 200;
+    width: 260px;
+    min-width: 260px;
+    /* Override desktop collapsed transition — use slide on mobile */
+    transition: left var(--sidebar-transition), opacity 0s;
+    opacity: 1;
+  }
+
+  /* On mobile, open/close via .open instead of .collapsed */
+  #sidebar.open {
+    left: 0;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Desktop collapsed class has no effect on mobile */
+  #sidebar.collapsed {
+    width: 260px;
+    min-width: 260px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

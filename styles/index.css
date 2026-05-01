@@ -1,0 +1,55 @@
+:root {
+  /* ── Brand / Accent ─────────────────────────────────────────── */
+  --accent:        #5b8af5;
+  --accent-dark:   #3a66d4;
+  --accent-bg:     #e7f1ff;
+  --accent-text:   #084298;
+
+  /* ── App background ─────────────────────────────────────────── */
+  --bg-app:        #f8f9fa;
+  --bg-card:       #ffffff;
+  --bg-surface:    #f1f3f5;
+
+  /* ── Sidebar palette ─────────────────────────────────────────── */
+  --sidebar-bg:           #071336;
+  --sidebar-border:       #1e2130;
+  --sidebar-hover-bg:     #0f1528;
+  --sidebar-active-bg:    #161e38;
+  --sidebar-active-border:#5b8af5;
+
+  /* Sidebar text — lifted for readability */
+  --sidebar-label:        #6878a8;   /* group labels (was #4a5070 — too dim) */
+  --sidebar-item:         #a8b0cc;   /* normal items (was #8b92b0 — too dim) */
+  --sidebar-item-hover:   #d4d9ee;   /* hover */
+  --sidebar-item-active:  #e8ecf8;   /* active */
+  --sidebar-subtitle:     #6878a8;   /* subtitle under active item */
+  --sidebar-disabled:     #3d4460;   /* coming-soon items */
+
+  /* ── Content typography ──────────────────────────────────────── */
+  --text-primary:   #212529;
+  --text-secondary: #6c757d;
+  --text-accent:    #0d6efd;         /* blue links / command names */
+
+  /* ── Borders & shadows ───────────────────────────────────────── */
+  --border:         #dee2e6;
+  --shadow:         0 4px 6px -1px rgba(0,0,0,.10), 0 2px 4px -1px rgba(0,0,0,.06);
+
+  /* ── Code blocks ─────────────────────────────────────────────── */
+  --code-bg:        #272822;
+  --code-text:      #f8f8f2;
+
+  /* ── Fonts ───────────────────────────────────────────────────── */
+  --font-sans:  'Inter', -apple-system, sans-serif;
+  --font-mono:  'JetBrains Mono', monospace;
+
+  /* ── Radii ───────────────────────────────────────────────────── */
+  --radius-lg:  12px;
+  --radius-md:  8px;
+  --radius-sm:  4px;
+
+  /* ── Sidebar sizing ──────────────────────────────────────────── */
+  --sidebar-width:          272px;
+  --sidebar-collapsed-width: 0px;
+  --navbar-height:          52px;
+  --sidebar-transition:     0.25s ease;
+}
