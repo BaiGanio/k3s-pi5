@@ -1,4 +1,4 @@
-window.commandData_nginxIngress = [
+window.commandData = [
 
   {
     id: 300, section: "ingress", sectionTitle: "Nginx Ingress Controller",

@@ -1,4 +1,4 @@
-window.commandData_persistentStorage = [
+window.commandData = [
 
   {
     id: 200, section: "storage", sectionTitle: "Persistent Storage",
