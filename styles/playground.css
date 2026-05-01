@@ -10,7 +10,7 @@
 }
 
 #playground-main .inner {
-  max-width: 960px;
+  max-width: 1240px;
   margin: 0 auto;
 }
 
@@ -53,7 +53,6 @@
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.65;
-  max-width: 540px;
 }
 
 .welcome-section-label {
@@ -68,7 +67,7 @@
 /* ── Module card grid ────────────────────────────────────────────────────── */
 .welcome-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 2rem;
 }
@@ -133,7 +132,6 @@
   font-size: 0.62rem;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 20px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }

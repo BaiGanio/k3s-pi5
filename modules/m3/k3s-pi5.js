@@ -489,34 +489,5 @@ window.commandData = [
     ],
     example: "NAME                                    READY   STATUS    RESTARTS\nkubernetes-dashboard-kong-...           1/1     Running   0\nkubernetes-dashboard-web-...            1/1     Running   0\n\nNAME                            CLASS     HOSTS                      ADDRESS\nkubernetes-dashboard-ingress    traefik   dashboard.your-domain.com  192.168.x.x",
     why: "If pods aren't Running or the Ingress ADDRESS is empty, something is wrong before you even open the browser. Fix here first, not after debugging Cloudflare."
-  },
-
-  // ── Cloudflare Tunnel ─────────────────────────────────────
-  {
-    id: 300, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
-    commandTitle: "Authenticate with Cloudflare",
-    command: "cloudflared tunnel login",
-    searchTerms: "cloudflared tunnel login authenticate",
-    description: "Authenticates your Pi with your Cloudflare account. Opens a browser, you log in, Pi gets a certificate.",
-    parts: [
-      { text: "cloudflared", explanation: "Cloudflare's tunnel client" },
-      { text: "tunnel",      explanation: "subcommand for tunnel operations" },
-      { text: "login",       explanation: "authenticate with Cloudflare account" }
-    ],
-    example: "Please open the following URL and log in with your Cloudflare account:\nhttps://dash.cloudflare.com/argotunnel?...",
-    why: "The certificate proves you own the Cloudflare account. Without it, the tunnel won't work."
-  },
-  {
-    id: 301, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
-    commandTitle: "Create a Tunnel",
-    command: "cloudflared tunnel create my-pi",
-    searchTerms: "cloudflared tunnel create",
-    description: "Creates a named tunnel. \"my-pi\" is just a label. Generates a unique credentials file for this tunnel.",
-    parts: [
-      { text: "cloudflared tunnel create", explanation: "create a new tunnel" },
-      { text: "my-pi",                     explanation: "name you choose — use something meaningful" }
-    ],
-    example: "Tunnel my-pi created with ID abc123def456\nCredentials file: ~/.cloudflared/abc123def456.json",
-    why: "Creates unique credentials for this tunnel. You'll reference these in the config file later."
   }
 ];

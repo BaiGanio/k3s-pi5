@@ -1,0 +1,547 @@
+window.commandData = [
+
+  // ── Cloudflare Tunnel ─────────────────────────────────────
+  {
+    id: 100, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Authenticate with Cloudflare",
+    command: "cloudflared tunnel login",
+    searchTerms: "cloudflared tunnel login authenticate",
+    description: "Authenticates your Pi with your Cloudflare account. Opens a browser, you log in, Pi gets a certificate.",
+    parts: [
+      { text: "cloudflared", explanation: "Cloudflare's tunnel client" },
+      { text: "tunnel",      explanation: "subcommand for tunnel operations" },
+      { text: "login",       explanation: "authenticate with Cloudflare account" }
+    ],
+    example: "Please open the following URL and log in with your Cloudflare account:\nhttps://dash.cloudflare.com/argotunnel?...",
+    why: "The certificate proves you own the Cloudflare account. Without it, the tunnel won't work."
+  },
+  {
+    id: 101, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Create a Tunnel",
+    command: "cloudflared tunnel create my-pi",
+    searchTerms: "cloudflared tunnel create",
+    description: "Creates a named tunnel. \"my-pi\" is just a label. Generates a unique credentials file for this tunnel.",
+    parts: [
+      { text: "cloudflared tunnel create", explanation: "create a new tunnel" },
+      { text: "my-pi",                     explanation: "name you choose — use something meaningful" }
+    ],
+    example: "Tunnel my-pi created with ID abc123def456\nCredentials file: ~/.cloudflared/abc123def456.json",
+    why: "Creates unique credentials for this tunnel. You'll reference these in the config file later."
+  }
+];window.commandData = [
+
+  // ── Cloudflare Tunnel ─────────────────────────────────────
+  {
+    id: 100, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Install cloudflared (ARM64)",
+    command: "wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 && chmod +x cloudflared-linux-arm64 && sudo mv cloudflared-linux-arm64 /usr/local/bin/cloudflared",
+    searchTerms: "cloudflared install wget arm64 raspberry pi binary",
+    description: "Downloads the cloudflared ARM64 binary, makes it executable, and moves it to the system PATH. Required before any tunnel commands.",
+    parts: [
+      { text: "wget -q ...",          explanation: "silently downloads the latest ARM64 release from GitHub" },
+      { text: "chmod +x ...",         explanation: "makes the binary executable" },
+      { text: "sudo mv ... /usr/local/bin/cloudflared", explanation: "installs it system-wide so any user can run cloudflared" }
+    ],
+    example: "cloudflared --version\n# cloudflared version 2024.x.x",
+    why: "The Pi 5 runs ARM64. Downloading the wrong architecture binary will silently fail or produce an 'Exec format error'."
+  },
+  {
+    id: 101, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Authenticate with Cloudflare",
+    command: "cloudflared tunnel login",
+    searchTerms: "cloudflared tunnel login authenticate cert.pem",
+    description: "Authenticates your Pi with your Cloudflare account. Opens a browser, you log in and select a domain, and a certificate is saved locally at ~/.cloudflared/cert.pem.",
+    parts: [
+      { text: "cloudflared", explanation: "Cloudflare's tunnel client" },
+      { text: "tunnel",      explanation: "subcommand for tunnel operations" },
+      { text: "login",       explanation: "authenticate with your Cloudflare account" }
+    ],
+    example: "Please open the following URL and log in with your Cloudflare account:\nhttps://dash.cloudflare.com/argotunnel?...\n\n# After login:\nYou have successfully logged in.\nIf you wish to copy your credentials to a server, they have been saved to:\n/home/pi/.cloudflared/cert.pem",
+    why: "The certificate proves you own the Cloudflare account. Without it, tunnel creation will be rejected."
+  },
+  {
+    id: 102, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Create a Tunnel",
+    command: "cloudflared tunnel create my-pi",
+    searchTerms: "cloudflared tunnel create name credentials json",
+    description: "Creates a named tunnel. \"my-pi\" is just a label — pick something meaningful. Generates a unique credentials JSON file for this tunnel.",
+    parts: [
+      { text: "cloudflared tunnel create", explanation: "registers a new tunnel in your Cloudflare account" },
+      { text: "my-pi",                     explanation: "the name you choose — used to reference this tunnel later" }
+    ],
+    example: "Tunnel credentials written to /home/pi/.cloudflared/abc123def456.json\nTunnel my-pi created with ID abc123def456",
+    why: "Each tunnel gets unique credentials. You reference this name in config.yml and when running the tunnel."
+  },
+  {
+    id: 103, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Save Tunnel ID to Variable",
+    command: "TUNNEL_ID=$(cloudflared tunnel list | grep my-pi | awk '{print $1}')\necho $TUNNEL_ID",
+    searchTerms: "tunnel id save variable awk grep",
+    description: "Captures the tunnel UUID into a shell variable so you can use it in the config file without copy-pasting.",
+    parts: [
+      { text: "cloudflared tunnel list", explanation: "lists all tunnels in your account" },
+      { text: "grep my-pi",             explanation: "filters to only the row for your tunnel" },
+      { text: "awk '{print $1}'",       explanation: "extracts the first column — the UUID" },
+      { text: "echo $TUNNEL_ID",        explanation: "prints the captured value to confirm it" }
+    ],
+    example: "abc123def456-7890-abcd-ef01-234567890abc",
+    why: "The credentials file is named after the UUID, not the tunnel name. You need this to write the config.yml correctly."
+  },
+  {
+    id: 104, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Create Tunnel Config File",
+    command: "nano ~/.cloudflared/config.yml",
+    searchTerms: "config yml cloudflared ingress hostname service",
+    description: "Creates the tunnel routing config. Maps your Cloudflare domain(s) to the k3s Traefik ingress running on port 80 of the Pi.",
+    parts: [
+      { text: "tunnel: my-pi",                          explanation: "must match the tunnel name you created" },
+      { text: "credentials-file:",                      explanation: "path to the JSON file generated by tunnel create" },
+      { text: "- hostname: yourdomain.com",             explanation: "routes root domain to your local k3s Traefik ingress" },
+      { text: "- hostname: \"*.yourdomain.com\"",       explanation: "catches all subdomains — app.yourdomain.com, api.yourdomain.com, etc." },
+      { text: "- service: http_status:404",             explanation: "catch-all: returns 404 for any unmapped hostname" }
+    ],
+    example: "# ~/.cloudflared/config.yml\ntunnel: my-pi\ncredentials-file: /home/pi/.cloudflared/abc123def456.json\n\ningress:\n  - hostname: yourdomain.com\n    service: http://localhost/\n  - hostname: \"*.yourdomain.com\"\n    service: http://localhost/\n  - service: http_status:404",
+    why: "Without this file, cloudflared doesn't know where to forward traffic. The wildcard hostname entry is what lets subdomains like api.yourdomain.com reach your Node.js services."
+  },
+  {
+    id: 105, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Test Tunnel Manually",
+    command: "cloudflared tunnel run my-pi",
+    searchTerms: "cloudflared tunnel run test connection edge",
+    description: "Starts the tunnel in the foreground to verify connectivity before setting up a systemd service. Press Ctrl+C to stop.",
+    parts: [
+      { text: "cloudflared tunnel run", explanation: "connects the tunnel to Cloudflare's edge network" },
+      { text: "my-pi",                  explanation: "the tunnel name to run" }
+    ],
+    example: "2024/01/01 10:00:00 INF Starting tunnel tunnelID=abc123\n2024/01/01 10:00:01 INF Registered tunnel connection connIndex=0 ip=198.41.200.x\n2024/01/01 10:00:01 INF Connection abc123 registered with protocol=h2mux",
+    why: "Always test manually first. If this fails, your systemd service will also fail — and it's much easier to debug interactively."
+  },
+  {
+    id: 106, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Create Systemd Service for Tunnel",
+    command: "sudo nano /etc/systemd/system/cloudflared.service",
+    searchTerms: "systemd service cloudflared auto-start boot persistent",
+    description: "Creates a systemd unit so the tunnel starts automatically on boot and restarts on failure.",
+    parts: [
+      { text: "After=network.target",                    explanation: "ensures tunnel starts only after networking is up" },
+      { text: "ExecStart=... tunnel run my-pi",          explanation: "the command systemd runs to start the tunnel" },
+      { text: "Restart=on-failure",                      explanation: "automatically restarts if the process crashes" },
+      { text: "RestartSec=5s",                           explanation: "waits 5 seconds before attempting a restart" }
+    ],
+    example: "[Unit]\nDescription=Cloudflare Tunnel\nAfter=network.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=pi\nWorkingDirectory=/home/pi/.cloudflared\nExecStart=/usr/local/bin/cloudflared tunnel run my-pi\nRestart=on-failure\nRestartSec=5s\n\n[Install]\nWantedBy=multi-user.target",
+    why: "Without a systemd service the tunnel dies when your SSH session ends. This keeps it running 24/7."
+  },
+  {
+    id: 107, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Enable & Start Tunnel Service",
+    command: "sudo systemctl daemon-reload && sudo systemctl enable cloudflared && sudo systemctl start cloudflared",
+    searchTerms: "systemctl enable start daemon-reload cloudflared",
+    description: "Reloads systemd to pick up the new unit file, enables it on boot, and starts it immediately.",
+    parts: [
+      { text: "daemon-reload",        explanation: "tells systemd to re-read unit files from disk" },
+      { text: "enable cloudflared",   explanation: "creates symlinks so it starts on boot" },
+      { text: "start cloudflared",    explanation: "starts the tunnel right now without rebooting" }
+    ],
+    example: "# Check it's running:\nsudo systemctl status cloudflared\n# ● cloudflared.service - Cloudflare Tunnel\n#    Active: active (running) since ...\n\n# Follow live logs:\nsudo journalctl -u cloudflared -f",
+    why: "daemon-reload is required whenever you create or edit a unit file — systemd won't see changes otherwise."
+  },
+
+  // ── Persistent Storage ────────────────────────────────────
+  {
+    id: 200, section: "storage", sectionTitle: "Persistent Storage",
+    commandTitle: "Check Default Storage Class",
+    command: "kubectl get storageclass",
+    searchTerms: "storageclass local-path provisioner kubectl get",
+    description: "Lists available storage classes. K3s ships with local-path-provisioner, which automatically creates volumes in /var/lib/rancher/k3s/storage/.",
+    parts: [
+      { text: "kubectl get storageclass", explanation: "lists all StorageClass resources in the cluster" }
+    ],
+    example: "NAME                   PROVISIONER             RECLAIM POLICY   VOLUME BINDING MODE\nlocal-path (default)   rancher.io/local-path   Delete           WaitForFirstConsumer",
+    why: "Before creating PVCs, confirm local-path is present and marked (default). If it's missing, dynamic provisioning won't work and your PostgreSQL pod will stay Pending."
+  },
+  {
+    id: 201, section: "storage", sectionTitle: "Persistent Storage",
+    commandTitle: "Create Data Directories",
+    command: "sudo mkdir -p /mnt/k3s-data/{databases,applications} && sudo chown -R 1000:1000 /mnt/k3s-data && sudo chmod -R 755 /mnt/k3s-data",
+    searchTerms: "mkdir data directory postgres persistent chown chmod",
+    description: "Creates organised directories for persistent data on the Pi's filesystem. UID 1000 matches the default postgres container user.",
+    parts: [
+      { text: "mkdir -p /mnt/k3s-data/{databases,applications}", explanation: "creates both subdirectories in one shot using brace expansion" },
+      { text: "chown -R 1000:1000",                              explanation: "sets ownership to UID/GID 1000 — the postgres container runs as this user" },
+      { text: "chmod -R 755",                                    explanation: "allows read/execute for all, write only for owner" }
+    ],
+    example: "ls -la /mnt/k3s-data/\n# drwxr-xr-x 2 1000 1000 databases/\n# drwxr-xr-x 2 1000 1000 applications/",
+    why: "Storing data under /mnt separates cluster data from OS files and makes it easy to point an external USB drive here later."
+  },
+  {
+    id: 202, section: "storage", sectionTitle: "Persistent Storage",
+    commandTitle: "Create PersistentVolume & PVC",
+    command: "kubectl apply -f pv-postgres.yaml",
+    searchTerms: "persistentvolume pvc claim yaml apply postgres storage",
+    description: "Applies a PersistentVolume (5 GB from the Pi's disk) and a PersistentVolumeClaim that the PostgreSQL deployment binds to.",
+    parts: [
+      { text: "kind: PersistentVolume",      explanation: "defines the actual storage on the Pi's disk" },
+      { text: "kind: PersistentVolumeClaim", explanation: "the namespace-scoped handle your pods reference" },
+      { text: "storageClassName: local-path", explanation: "must match the StorageClass from kubectl get storageclass" },
+      { text: "hostPath: /mnt/k3s-data/databases", explanation: "the directory on the Pi's filesystem that backs this volume" }
+    ],
+    example: "# pv-postgres.yaml\napiVersion: v1\nkind: PersistentVolume\nmetadata:\n  name: database-pv\nspec:\n  capacity:\n    storage: 5Gi\n  accessModes:\n    - ReadWriteOnce\n  storageClassName: local-path\n  hostPath:\n    path: /mnt/k3s-data/databases\n    type: Directory\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: database-pvc\n  namespace: default\nspec:\n  accessModes:\n    - ReadWriteOnce\n  storageClassName: local-path\n  resources:\n    requests:\n      storage: 5Gi",
+    why: "Without a PVC bound to real disk storage, PostgreSQL data is lost every time the pod restarts. This is what makes your Node.js app's database durable."
+  },
+  {
+    id: 203, section: "storage", sectionTitle: "Persistent Storage",
+    commandTitle: "Verify PV and PVC Are Bound",
+    command: "kubectl get pv && kubectl get pvc",
+    searchTerms: "kubectl get pv pvc bound status verify",
+    description: "Checks that the PersistentVolume and PersistentVolumeClaim are in the Bound state. A PVC stuck in Pending means PostgreSQL won't start.",
+    parts: [
+      { text: "kubectl get pv",  explanation: "lists cluster-wide PersistentVolumes and their status" },
+      { text: "kubectl get pvc", explanation: "lists PersistentVolumeClaims in the current namespace" }
+    ],
+    example: "NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS\ndatabase-pv   5Gi        RWO            Retain           Bound\n\nNAME           STATUS   VOLUME        CAPACITY\ndatabase-pvc   Bound    database-pv   5Gi",
+    why: "If STATUS shows Pending, run 'kubectl describe pvc database-pvc' to see the binding error before attempting to deploy PostgreSQL."
+  },
+
+  // ── Nginx Ingress Controller ──────────────────────────────
+  {
+    id: 300, section: "ingress", sectionTitle: "Nginx Ingress Controller",
+    commandTitle: "Check Traefik Is Running (K3s Default)",
+    command: "kubectl get pods -n kube-system | grep traefik",
+    searchTerms: "traefik ingress controller k3s kube-system pods",
+    description: "K3s ships with Traefik as its default ingress controller. Verify the pod is Running before creating Ingress resources.",
+    parts: [
+      { text: "kubectl get pods -n kube-system", explanation: "lists pods in the kube-system namespace where k3s system components run" },
+      { text: "grep traefik",                    explanation: "filters output to only show Traefik-related pods" }
+    ],
+    example: "traefik-7d6f6659b7-q8j2x   1/1   Running   0   2d",
+    why: "If Traefik isn't running, none of your Ingress rules will route traffic — Cloudflare's tunnel will reach the Pi but get no response."
+  },
+  {
+    id: 301, section: "ingress", sectionTitle: "Nginx Ingress Controller",
+    commandTitle: "Check Traefik Service & External IP",
+    command: "kubectl get svc -n kube-system traefik",
+    searchTerms: "traefik service loadbalancer external ip port 80 443",
+    description: "Shows the Traefik LoadBalancer service. The EXTERNAL-IP should be your Pi's LAN IP, and ports 80/443 should be exposed.",
+    parts: [
+      { text: "kubectl get svc -n kube-system", explanation: "lists services in the system namespace" },
+      { text: "traefik",                         explanation: "filters to the Traefik service specifically" }
+    ],
+    example: "NAME      TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)\ntraefik   LoadBalancer   10.43.123.45   192.168.1.100    80:30080/TCP, 443:30443/TCP",
+    why: "The EXTERNAL-IP is where Cloudflare's tunnel forwards traffic. If it shows <pending> there's a networking issue to resolve first."
+  },
+  {
+    id: 302, section: "ingress", sectionTitle: "Nginx Ingress Controller",
+    commandTitle: "Create a Test Ingress Rule",
+    command: "kubectl apply -f test-ingress.yaml",
+    searchTerms: "ingress yaml apply traefik annotation hostname routing test",
+    description: "Deploys a minimal Ingress resource that routes a hostname to an existing service. Uses the Traefik entrypoints annotation.",
+    parts: [
+      { text: "annotations: traefik.ingress.kubernetes.io/router.entrypoints: web", explanation: "tells Traefik to use the HTTP entrypoint (port 80)" },
+      { text: "host: test.yourdomain.com",                                           explanation: "the hostname Cloudflare tunnel routes to this service" },
+      { text: "pathType: Prefix",                                                    explanation: "matches any path starting with /" }
+    ],
+    example: "# test-ingress.yaml\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: test-ingress\n  annotations:\n    traefik.ingress.kubernetes.io/router.entrypoints: web\nspec:\n  rules:\n    - host: test.yourdomain.com\n      http:\n        paths:\n          - path: /\n            pathType: Prefix\n            backend:\n              service:\n                name: nginx-test\n                port:\n                  number: 80",
+    why: "Test with a simple Nginx service before exposing your Node.js app — isolates whether ingress routing or the app itself is the problem."
+  },
+  {
+    id: 303, section: "ingress", sectionTitle: "Nginx Ingress Controller",
+    commandTitle: "List All Ingress Rules",
+    command: "kubectl get ingress -A",
+    searchTerms: "kubectl get ingress list all namespaces routes hosts",
+    description: "Lists every Ingress resource across all namespaces. Shows which hostnames are mapped to which services.",
+    parts: [
+      { text: "kubectl get ingress", explanation: "lists Ingress resources" },
+      { text: "-A",                  explanation: "across all namespaces (short for --all-namespaces)" }
+    ],
+    example: "NAMESPACE              NAME                   CLASS    HOSTS                       ADDRESS\ndefault                nginx-welcome          <none>   nginx.yourdomain.com        192.168.1.100\ndefault                node-api               <none>   api.yourdomain.com          192.168.1.100\nkubernetes-dashboard   kubernetes-dashboard   <none>   dashboard.yourdomain.com    192.168.1.100",
+    why: "Quick way to audit all active routing rules and spot hostname conflicts before they cause 404s through your Cloudflare tunnel."
+  },
+
+  // ── K3s Dashboard ─────────────────────────────────────────
+  {
+    id: 400, section: "dashboard", sectionTitle: "K3s Dashboard",
+    commandTitle: "Install Kubernetes Dashboard",
+    command: "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml",
+    searchTerms: "kubernetes dashboard install apply yaml web ui",
+    description: "Installs the Kubernetes web dashboard into the kubernetes-dashboard namespace. Takes around 30 seconds for the pod to become ready.",
+    parts: [
+      { text: "kubectl apply -f <url>", explanation: "applies the manifest directly from GitHub without downloading first" },
+      { text: "v2.7.0",                 explanation: "pinned version — always pin dashboard versions for reproducibility" }
+    ],
+    example: "namespace/kubernetes-dashboard created\nserviceaccount/kubernetes-dashboard created\ndeployment.apps/kubernetes-dashboard created\n\n# Wait for it:\nkubectl wait --for=condition=ready pod \\\n  -l k8s-app=kubernetes-dashboard \\\n  -n kubernetes-dashboard --timeout=300s",
+    why: "The dashboard lets you visualise pods, logs, CPU/memory usage and deploy apps via a web UI — useful when SSH-ing into the Pi isn't convenient."
+  },
+  {
+    id: 401, section: "dashboard", sectionTitle: "K3s Dashboard",
+    commandTitle: "Create Admin User & Get Token",
+    command: "kubectl apply -f dashboard-admin.yaml && kubectl -n kubernetes-dashboard create token admin-user",
+    searchTerms: "dashboard admin user token rbac clusterrolebinding login",
+    description: "Creates a ServiceAccount with cluster-admin privileges and generates a short-lived bearer token for dashboard login.",
+    parts: [
+      { text: "kind: ServiceAccount",      explanation: "the user identity for the dashboard" },
+      { text: "kind: ClusterRoleBinding",  explanation: "grants cluster-admin role — full access to all resources" },
+      { text: "create token admin-user",   explanation: "generates a JWT bearer token; copy this for the dashboard login page" }
+    ],
+    example: "# dashboard-admin.yaml\napiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: admin-user\n  namespace: kubernetes-dashboard\n---\napiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRoleBinding\nmetadata:\n  name: admin-user\nroleRef:\n  apiGroup: rbac.authorization.k8s.io\n  kind: ClusterRole\n  name: cluster-admin\nsubjects:\n- kind: ServiceAccount\n  name: admin-user\n  namespace: kubernetes-dashboard\n\n# Token output:\neyJhbGciOiJSUzI1NiIsImtpZCI6Ii...",
+    why: "The dashboard requires authentication. Cluster-admin is fine for a private home Pi; restrict to read-only roles if others have access to the domain."
+  },
+  {
+    id: 402, section: "dashboard", sectionTitle: "K3s Dashboard",
+    commandTitle: "Create Dashboard Ingress",
+    command: "kubectl apply -f dashboard-ingress.yaml",
+    searchTerms: "dashboard ingress hostname traefik expose cloudflare",
+    description: "Exposes the dashboard via an Ingress rule so it's accessible through your Cloudflare tunnel at dashboard.yourdomain.com.",
+    parts: [
+      { text: "namespace: kubernetes-dashboard",     explanation: "Ingress must be in the same namespace as the dashboard service" },
+      { text: "host: dashboard.yourdomain.com",      explanation: "the subdomain Cloudflare will route to the dashboard" },
+      { text: "port: number: 443",                   explanation: "the dashboard service listens on 443 internally" }
+    ],
+    example: "# dashboard-ingress.yaml\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: kubernetes-dashboard\n  namespace: kubernetes-dashboard\n  annotations:\n    traefik.ingress.kubernetes.io/router.entrypoints: web\nspec:\n  rules:\n    - host: dashboard.yourdomain.com\n      http:\n        paths:\n          - path: /\n            pathType: Prefix\n            backend:\n              service:\n                name: kubernetes-dashboard\n                port:\n                  number: 443",
+    why: "Without an Ingress, the dashboard is only accessible via kubectl port-forward — this makes it permanently available through your tunnel."
+  },
+
+  // ── Sample Applications ───────────────────────────────────
+  {
+    id: 500, section: "apps", sectionTitle: "Sample Applications",
+    commandTitle: "Deploy Nginx Welcome Page",
+    command: "kubectl apply -f nginx-deployment.yaml",
+    searchTerms: "nginx deploy deployment yaml service ingress test arm64",
+    description: "Deploys a simple Nginx container as a smoke-test: confirms pod scheduling, ClusterIP services, and Ingress routing all work before deploying your Node.js app.",
+    parts: [
+      { text: "kind: Deployment",  explanation: "manages the Nginx pod, handles restarts and scaling" },
+      { text: "kind: Service",     explanation: "gives the pod a stable ClusterIP other pods can reach" },
+      { text: "kind: Ingress",     explanation: "routes nginx.yourdomain.com → this service via Traefik" },
+      { text: "image: nginx:latest", explanation: "official Nginx image — ARM64 compatible" }
+    ],
+    example: "# nginx-deployment.yaml (Deployment + Service + Ingress combined)\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: nginx-welcome\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: nginx\n  template:\n    metadata:\n      labels:\n        app: nginx\n    spec:\n      containers:\n      - name: nginx\n        image: nginx:latest\n        ports:\n        - containerPort: 80\n        resources:\n          requests:\n            memory: \"64Mi\"\n            cpu: \"100m\"\n          limits:\n            memory: \"128Mi\"\n            cpu: \"250m\"\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: nginx-welcome\nspec:\n  selector:\n    app: nginx\n  ports:\n  - port: 80\n    targetPort: 80\n  type: ClusterIP\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: nginx-welcome\n  annotations:\n    traefik.ingress.kubernetes.io/router.entrypoints: web\nspec:\n  rules:\n  - host: nginx.yourdomain.com\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: nginx-welcome\n            port:\n              number: 80",
+    why: "Always verify infrastructure with the simplest possible app first. If Nginx doesn't serve through Cloudflare, your Node.js app won't either."
+  },
+  {
+    id: 501, section: "apps", sectionTitle: "Sample Applications",
+    commandTitle: "Deploy Node.js API with PostgreSQL",
+    command: "kubectl apply -f node-api-deployment.yaml",
+    searchTerms: "node.js nodejs api postgres postgresql deployment configmap secret ingress",
+    description: "Deploys a Node.js REST API connected to PostgreSQL. Uses a ConfigMap for non-sensitive config, a Secret for the DB password, and mounts DATABASE_URL as an environment variable.",
+    parts: [
+      { text: "kind: ConfigMap",                   explanation: "holds non-sensitive env vars: DB host, name, port, user" },
+      { text: "kind: Secret",                      explanation: "holds the PostgreSQL password — base64 encoded in the cluster" },
+      { text: "envFrom: configMapRef / secretRef", explanation: "injects all keys from ConfigMap and Secret as env vars into the container" },
+      { text: "image: node:20-alpine",             explanation: "lightweight Node.js base image, ARM64 compatible" }
+    ],
+    example: "# node-api-deployment.yaml\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: node-api-config\ndata:\n  DB_HOST: postgres\n  DB_PORT: \"5432\"\n  DB_NAME: appdb\n  DB_USER: appuser\n  PORT: \"3000\"\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: node-api-secret\ntype: Opaque\nstringData:\n  DB_PASSWORD: \"changeme123\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: node-api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: node-api\n  template:\n    metadata:\n      labels:\n        app: node-api\n    spec:\n      containers:\n      - name: node-api\n        image: node:20-alpine\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: node-api-config\n        - secretRef:\n            name: node-api-secret\n        resources:\n          requests:\n            memory: \"128Mi\"\n            cpu: \"100m\"\n          limits:\n            memory: \"256Mi\"\n            cpu: \"500m\"\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: node-api\nspec:\n  selector:\n    app: node-api\n  ports:\n  - port: 80\n    targetPort: 3000\n  type: ClusterIP\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: node-api\n  annotations:\n    traefik.ingress.kubernetes.io/router.entrypoints: web\nspec:\n  rules:\n  - host: api.yourdomain.com\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: node-api\n            port:\n              number: 80",
+    why: "Separating config (ConfigMap) from secrets (Secret) follows the 12-factor app pattern. The DB password never appears in your git repo or deployment logs."
+  },
+  {
+    id: 502, section: "apps", sectionTitle: "Sample Applications",
+    commandTitle: "Deploy PostgreSQL Database",
+    command: "kubectl apply -f postgres-deployment.yaml",
+    searchTerms: "postgres postgresql deployment persistent volume claim secret configmap alpine",
+    description: "Deploys PostgreSQL 15 (Alpine) backed by the database-pvc PersistentVolumeClaim. Data survives pod restarts. Uses a Secret for the password and ConfigMap for DB name and user.",
+    parts: [
+      { text: "image: postgres:15-alpine",             explanation: "lightweight Postgres image — ARM64 compatible, ~80MB vs 300MB for debian" },
+      { text: "volumeMounts: mountPath: /var/lib/postgresql/data", explanation: "the directory Postgres writes its data files to" },
+      { text: "subPath: postgres",                     explanation: "stores data in a postgres/ subfolder of the PVC — prevents directory conflicts" },
+      { text: "claimName: database-pvc",               explanation: "references the PVC created in the Persistent Storage section" }
+    ],
+    example: "# postgres-deployment.yaml\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: postgres-config\ndata:\n  POSTGRES_DB: appdb\n  POSTGRES_USER: appuser\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: postgres-secret\ntype: Opaque\nstringData:\n  POSTGRES_PASSWORD: \"changeme123\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: postgres\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: postgres\n  template:\n    metadata:\n      labels:\n        app: postgres\n    spec:\n      containers:\n      - name: postgres\n        image: postgres:15-alpine\n        ports:\n        - containerPort: 5432\n        envFrom:\n        - configMapRef:\n            name: postgres-config\n        - secretRef:\n            name: postgres-secret\n        volumeMounts:\n        - name: postgres-storage\n          mountPath: /var/lib/postgresql/data\n          subPath: postgres\n        resources:\n          requests:\n            memory: \"256Mi\"\n            cpu: \"250m\"\n          limits:\n            memory: \"512Mi\"\n            cpu: \"500m\"\n      volumes:\n      - name: postgres-storage\n        persistentVolumeClaim:\n          claimName: database-pvc\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: postgres\nspec:\n  selector:\n    app: postgres\n  ports:\n  - port: 5432\n    targetPort: 5432\n  type: ClusterIP",
+    why: "ClusterIP means Postgres is only reachable from within the cluster — your Node.js pod can connect, but it's not exposed to the internet."
+  },
+  {
+    id: 503, section: "apps", sectionTitle: "Sample Applications",
+    commandTitle: "Connect to PostgreSQL from Node.js Pod",
+    command: "kubectl exec -it $(kubectl get pod -l app=node-api -o jsonpath='{.items[0].metadata.name}') -- node -e \"const { Pool } = require('pg'); const p = new Pool({ connectionString: process.env.DATABASE_URL }); p.query('SELECT NOW()').then(r => { console.log(r.rows[0]); p.end(); });\"",
+    searchTerms: "exec node postgres pg pool connect test query cluster",
+    description: "Opens an exec session into the running Node.js pod and runs a quick pg query to verify the database connection string is working end-to-end.",
+    parts: [
+      { text: "kubectl get pod -l app=node-api -o jsonpath=...", explanation: "dynamically resolves the current pod name so you don't have to copy-paste it" },
+      { text: "node -e \"...\"",                                  explanation: "runs a one-liner Node.js script inside the container" },
+      { text: "new Pool({ connectionString })",                   explanation: "uses the pg library with DATABASE_URL from the pod's environment" },
+      { text: "SELECT NOW()",                                     explanation: "simplest possible query — if this returns a timestamp, the DB connection works" }
+    ],
+    example: "{ now: 2024-01-15T10:30:00.000Z }",
+    why: "Testing from inside the Node.js pod confirms both the service DNS resolution (postgres → ClusterIP) and the credentials are correct before writing app code."
+  },
+
+  // ── Verification & Testing ────────────────────────────────
+  {
+    id: 600, section: "verification", sectionTitle: "Verification & Testing",
+    commandTitle: "List All Pods Across Namespaces",
+    command: "kubectl get pods -A",
+    searchTerms: "kubectl get pods all namespaces running status verify",
+    description: "Shows every pod in the cluster with its status. All pods should show Running (or Completed for jobs). Any CrashLoopBackOff or ImagePullBackOff needs attention.",
+    parts: [
+      { text: "kubectl get pods", explanation: "lists pods" },
+      { text: "-A",               explanation: "across all namespaces — includes kube-system, dashboard, default, etc." }
+    ],
+    example: "NAMESPACE              NAME                              READY   STATUS\nkube-system            coredns-57f9...                   1/1     Running\nkube-system            traefik-7d6f...                   1/1     Running\ndefault                postgres-...                      1/1     Running\ndefault                node-api-...                      1/1     Running\nkubernetes-dashboard   kubernetes-dashboard-...          1/1     Running",
+    why: "The first thing to check after any kubectl apply. If STATUS isn't Running, describe the pod to find out why."
+  },
+  {
+    id: 601, section: "verification", sectionTitle: "Verification & Testing",
+    commandTitle: "Test Cloudflare Tunnel Routing Locally",
+    command: "curl -H \"Host: api.yourdomain.com\" http://localhost/health",
+    searchTerms: "curl test localhost host header cloudflare tunnel routing",
+    description: "Tests the full path from Traefik to your Node.js app using the Host header trick — without relying on DNS. If this works, traffic from Cloudflare will work too.",
+    parts: [
+      { text: "curl",                           explanation: "makes an HTTP request" },
+      { text: "-H \"Host: api.yourdomain.com\"", explanation: "sets the Host header — Traefik uses this to match Ingress rules" },
+      { text: "http://localhost/health",         explanation: "hits Traefik on port 80; /health is a common Node.js readiness endpoint" }
+    ],
+    example: "# From your Pi:\ncurl -H \"Host: api.yourdomain.com\" http://localhost/health\n# {\"status\":\"ok\",\"db\":\"connected\"}",
+    why: "Lets you isolate whether a problem is in Cloudflare's routing or in your local k3s config. If curl works but Cloudflare doesn't, the issue is the tunnel config."
+  },
+  {
+    id: 602, section: "verification", sectionTitle: "Verification & Testing",
+    commandTitle: "Monitor Resource Usage",
+    command: "kubectl top pods -A",
+    searchTerms: "kubectl top pods cpu memory resource usage monitor",
+    description: "Shows live CPU and memory usage per pod. Critical on the Pi 5 (8GB RAM) — Node.js + Postgres + k3s system pods add up quickly.",
+    parts: [
+      { text: "kubectl top pods", explanation: "shows CPU (millicores) and memory (MiB) for each pod" },
+      { text: "-A",               explanation: "across all namespaces" }
+    ],
+    example: "NAME                    CPU(cores)   MEMORY(MiB)\nnode-api-...            12m          85Mi\npostgres-...            22m          134Mi\ntraefik-...             5m           28Mi\ncoredns-...             3m           18Mi",
+    why: "If your Node.js pod gets OOMKilled, increase its memory limit. If Postgres is the culprit, check for slow queries or missing indexes."
+  },
+  {
+    id: 603, section: "verification", sectionTitle: "Verification & Testing",
+    commandTitle: "View Pod Logs (Follow Mode)",
+    command: "kubectl logs -l app=node-api -f",
+    searchTerms: "kubectl logs follow realtime app label selector",
+    description: "Streams live logs from your Node.js pod. The -l flag selects by label so it works even after a pod restart generates a new pod name.",
+    parts: [
+      { text: "kubectl logs",         explanation: "fetches container stdout/stderr" },
+      { text: "-l app=node-api",      explanation: "selects pods by label rather than by name — survives restarts" },
+      { text: "-f",                   explanation: "follows (tails) the log stream in real-time" }
+    ],
+    example: "Server listening on port 3000\nConnected to PostgreSQL at postgres:5432/appdb\nGET /health 200 4ms\nPOST /api/users 201 23ms",
+    why: "Logs are the fastest way to diagnose a 502 from Cloudflare — tells you whether the request reached Node.js and whether the DB query succeeded."
+  },
+
+  // ── Troubleshooting ───────────────────────────────────────
+  {
+    id: 700, section: "troubleshooting", sectionTitle: "Troubleshooting",
+    commandTitle: "Debug: Pod Won't Start (ImagePullBackOff)",
+    command: "kubectl describe pod <pod-name> | grep -A 10 Events",
+    searchTerms: "imagepullbackoff describe pod events arm64 architecture",
+    description: "Describes the pod and filters to the Events section — shows exactly why the image couldn't be pulled. Usually an ARM64 incompatibility or a wrong tag.",
+    parts: [
+      { text: "kubectl describe pod <pod-name>", explanation: "shows full pod spec, conditions, and events" },
+      { text: "grep -A 10 Events",               explanation: "prints 10 lines after 'Events:' — where the pull error will appear" }
+    ],
+    example: "Events:\n  Warning  Failed   Back-off pulling image \"some-amd64-image:latest\"\n  Warning  Failed   Failed to pull image: no match for platform linux/arm64\n\n# Fix: use ARM64-compatible images only:\n# ✅ node:20-alpine, postgres:15-alpine, nginx:latest\n# ❌ Images tagged 'amd64', 'windows', 'nanoserver'",
+    why: "The Pi 5 is ARM64. Many Docker Hub images are amd64-only. Alpine-tagged images almost always include ARM64 support."
+  },
+  {
+    id: 701, section: "troubleshooting", sectionTitle: "Troubleshooting",
+    commandTitle: "Debug: App Running But Returning 503",
+    command: "kubectl describe pod <pod-name> && kubectl logs <pod-name> && kubectl get svc <service-name>",
+    searchTerms: "503 service unavailable crashloopbackoff exec logs svc cluster-ip",
+    description: "Three-step debug sequence for a running pod that isn't serving traffic. Covers pod state, app logs, and service networking.",
+    parts: [
+      { text: "kubectl describe pod",  explanation: "shows restart count and last termination reason" },
+      { text: "kubectl logs",          explanation: "shows app stdout — look for uncaught exceptions or DB connection errors" },
+      { text: "kubectl get svc",       explanation: "confirms the Service has a CLUSTER-IP (not <pending>)" }
+    ],
+    example: "# Quick cluster-internal connectivity test:\nkubectl exec -it <pod-name> -- wget -qO- http://localhost:3000/health\n\n# If that works but the ingress returns 503:\nkubectl get ingress <name> -o yaml | grep -A 5 backend",
+    why: "503 from Cloudflare tunnel almost always means Traefik can't reach the Service. Check the Ingress backend port matches the Service port."
+  },
+  {
+    id: 702, section: "troubleshooting", sectionTitle: "Troubleshooting",
+    commandTitle: "Debug: Postgres PVC Stuck in Pending",
+    command: "kubectl describe pvc database-pvc",
+    searchTerms: "pvc pending describe storage class provisioner binding",
+    description: "Shows why a PersistentVolumeClaim hasn't bound to a volume. Common causes: wrong storageClassName or missing /mnt/k3s-data/databases directory.",
+    parts: [
+      { text: "kubectl describe pvc database-pvc", explanation: "shows Events and conditions explaining why binding failed" }
+    ],
+    example: "Events:\n  Warning  ProvisioningFailed  \n    storageclass.storage.k8s.io \"local-path\" not found\n\n# Fix: confirm k3s local-path provisioner is running:\nkubectl get pods -n kube-system | grep local-path",
+    why: "The PostgreSQL pod won't start until its PVC is Bound. Fix the PVC first, then the pod will schedule automatically."
+  },
+  {
+    id: 703, section: "troubleshooting", sectionTitle: "Troubleshooting",
+    commandTitle: "Debug: Cloudflare Tunnel Error 522",
+    command: "sudo systemctl status cloudflared && sudo journalctl -u cloudflared -n 50",
+    searchTerms: "cloudflare error 522 origin unreachable tunnel logs journalctl",
+    description: "Error 522 means Cloudflare's edge reached the Pi but got no response from cloudflared (or cloudflared couldn't reach localhost:80). Check service status and recent logs.",
+    parts: [
+      { text: "systemctl status cloudflared",     explanation: "shows if the service is active and recent log lines" },
+      { text: "journalctl -u cloudflared -n 50",  explanation: "last 50 log lines from the tunnel — look for connection errors" }
+    ],
+    example: "# Check Traefik is actually listening on port 80:\ncurl http://localhost/\n\n# Verify tunnel config hostname matches Cloudflare DNS:\ncat ~/.cloudflared/config.yml\n\n# Restart tunnel after config changes:\nsudo systemctl restart cloudflared",
+    why: "522 is always a connectivity issue between cloudflared and localhost:80. Either Traefik isn't running or the config.yml has the wrong service URL."
+  },
+  {
+    id: 704, section: "troubleshooting", sectionTitle: "Troubleshooting",
+    commandTitle: "Debug: High Memory / Pod Eviction",
+    command: "kubectl top pods -A && kubectl get events -A --sort-by='.lastTimestamp' | grep -i evict",
+    searchTerms: "oom memory limit exceeded eviction top pods events",
+    description: "Identifies which pods are consuming the most memory and shows any recent eviction events. The Pi 5 has limited RAM shared between k3s, the OS, and all your pods.",
+    parts: [
+      { text: "kubectl top pods -A",       explanation: "shows current memory usage per pod in MiB" },
+      { text: "kubectl get events -A",     explanation: "lists cluster events across all namespaces" },
+      { text: "--sort-by='.lastTimestamp'", explanation: "most recent events first" },
+      { text: "grep -i evict",             explanation: "filters to eviction-related events only" }
+    ],
+    example: "# If Postgres is using too much memory, tune it:\n# Add to postgres container env:\n# - name: POSTGRES_INITDB_ARGS\n#   value: \"-c shared_buffers=64MB -c max_connections=20\"\n\n# Scale down non-essential deployments:\nkubectl scale deployment nginx-welcome --replicas=0",
+    why: "PostgreSQL defaults are tuned for servers with GBs of RAM. On the Pi, explicitly limit shared_buffers or pods will get OOMKilled under load."
+  },
+
+  // ── kubectl Quick Reference ───────────────────────────────
+  {
+    id: 800, section: "quickref", sectionTitle: "kubectl Quick Reference",
+    commandTitle: "Grant Non-Root kubectl Access",
+    command: "mkdir -p ~/.kube && sudo k3s kubectl config view --raw | sudo tee ~/.kube/config > /dev/null && sudo chown $(id -u):$(id -g) ~/.kube/config && sudo chmod 600 ~/.kube/config",
+    searchTerms: "kubectl kubeconfig non-root sudo access config",
+    description: "Copies the k3s kubeconfig to your user's ~/.kube/config so you can run kubectl without sudo.",
+    parts: [
+      { text: "k3s kubectl config view --raw", explanation: "outputs the admin kubeconfig including embedded certificates" },
+      { text: "tee ~/.kube/config",            explanation: "writes it to the standard kubectl config location" },
+      { text: "chmod 600",                     explanation: "restricts read access to your user only — kubectl refuses to load configs readable by others" }
+    ],
+    example: "# Test it:\nkubectl get nodes\n# NAME       STATUS   ROLES                  AGE\n# pi5        Ready    control-plane,master   2d",
+    why: "Running everything with sudo is tedious and risky. This is a one-time setup step that's safe because you're on a single-node private cluster."
+  },
+  {
+    id: 801, section: "quickref", sectionTitle: "kubectl Quick Reference",
+    commandTitle: "Scale a Deployment",
+    command: "kubectl scale deployment node-api --replicas=2",
+    searchTerms: "scale deployment replicas up down kubectl",
+    description: "Instantly scales a Deployment to the specified number of pod replicas. Set to 0 to pause an app without deleting it.",
+    parts: [
+      { text: "kubectl scale deployment", explanation: "changes the desired replica count for a Deployment" },
+      { text: "node-api",                 explanation: "the name of the Deployment to scale" },
+      { text: "--replicas=2",             explanation: "the new desired number of running pods" }
+    ],
+    example: "deployment.apps/node-api scaled\n\n# Verify:\nkubectl get pods -l app=node-api\n# NAME             READY   STATUS\n# node-api-abc12   1/1     Running\n# node-api-def34   1/1     Running",
+    why: "On the Pi 5, more than 2 replicas of a Node.js app will start competing for RAM. Scale up for load testing, scale to 0 to free resources."
+  },
+  {
+    id: 802, section: "quickref", sectionTitle: "kubectl Quick Reference",
+    commandTitle: "Shell Into a Running Pod",
+    command: "kubectl exec -it <pod-name> -- /bin/sh",
+    searchTerms: "exec shell sh bash interactive pod debug kubectl",
+    description: "Opens an interactive shell inside a running container. Essential for debugging — check environment variables, test DB connectivity, inspect the filesystem.",
+    parts: [
+      { text: "kubectl exec -it", explanation: "executes a command interactively (-i) with a TTY (-t)" },
+      { text: "<pod-name>",       explanation: "get the name from 'kubectl get pods'" },
+      { text: "-- /bin/sh",       explanation: "the command to run — /bin/sh works in Alpine images (/bin/bash won't)" }
+    ],
+    example: "# Inside the node-api pod:\nenv | grep DB           # check DB env vars are injected\nwget -qO- http://postgres:5432  # test postgres service DNS\nnode -e \"console.log(process.env.DATABASE_URL)\"",
+    why: "Environment variables visible inside the pod may differ from what you expect — this is the definitive way to confirm your ConfigMap and Secret are mounted correctly."
+  },
+  {
+    id: 803, section: "quickref", sectionTitle: "kubectl Quick Reference",
+    commandTitle: "Rolling Update — Change Image",
+    command: "kubectl set image deployment/node-api node-api=node:20-alpine",
+    searchTerms: "set image deployment rolling update rollout kubectl",
+    description: "Updates the container image for a Deployment. K3s performs a rolling update — starts new pods before terminating old ones, so there's no downtime.",
+    parts: [
+      { text: "kubectl set image",        explanation: "updates the image field in the Deployment spec" },
+      { text: "deployment/node-api",      explanation: "the Deployment to update" },
+      { text: "node-api=node:20-alpine",  explanation: "container-name=new-image-tag format" }
+    ],
+    example: "deployment.apps/node-api image updated\n\n# Watch the rollout:\nkubectl rollout status deployment/node-api\n# Waiting for rollout to finish: 1 old replicas are pending termination\n# deployment \"node-api\" successfully rolled out\n\n# Roll back if something went wrong:\nkubectl rollout undo deployment/node-api",
+    why: "rollout undo is your escape hatch. Always verify the new image works in a test namespace before updating production."
+  }
+];
