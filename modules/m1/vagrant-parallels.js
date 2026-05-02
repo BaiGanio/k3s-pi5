@@ -17,15 +17,21 @@ window.pageBlocks = [
         <code>app-db</code> (PostgreSQL) — both defined in a single <code>Vagrantfile</code>
         and brought up with one command.
       </p>
+      <p>
+        <strong>Why this approach?</strong><br>
+        Vagrant provides a declarative, version-controlled interface to VM provisioning: the Vagrantfile is plain Ruby DSL checked into your repo, so any team member — or a fresh machine — can reproduce the exact same environment with vagrant up.<br> Under the hood, Vagrant talks to a provider (here, Parallels) via its plugin API to create, snapshot, and destroy VMs, and to a provisioner (shell scripts, Ansible, etc.) to configure what runs inside them. This separation of concerns means you can swap the provisioner or even the provider without rewriting your environment definition.<br> Running workloads inside isolated VMs also gives you proper process and network namespace separation — something Docker alone does not give you — which matters when you need to simulate a realistic multi-host topology (a web tier talking to a database tier over a private network) without polluting your host OS.
+      </p>
+      <p>
+        <strong>Why not VirtualBox?</strong><br>
+        VirtualBox relies on kernel extensions (kexts) to interface with the hypervisor layer. Apple Silicon Macs run on ARM64 and ship with Apple Hypervisor.framework as the sole officially supported virtualization interface.<br> VirtualBox has no production-ready ARM64 port and its kext model is incompatible with the security architecture of macOS on Apple Silicon. In practice this means VirtualBox either refuses to install, crashes on boot, or runs x86 guest images through binary translation at a steep performance penalty — none of which is acceptable for day-to-day development.
+      </p>
       <p><strong>Prerequisites</strong></p>
       <ul>
-        <li>Homebrew installed on your Mac</li>
-        <li>Parallels Desktop <strong>Pro or Business</strong> edition
-            (Standard does not expose the automation API Vagrant needs)</li>
+        <li>Parallels Desktop <strong>Pro or Business</strong> edition (Standard does not expose the automation API Vagrant needs)</li>
         <li>~10 GB free disk space for the ARM64 box image and VM disks</li>
       </ul>
       <p>
-        The Mac host stays completely clean — no Node.js, no Postgres, no global npm packages.
+        The Mac host stays completely clean — no Node.js, no Postgres, no global npm packages.<br>
         Every runtime lives inside disposable VMs that can be destroyed and rebuilt in minutes.
       </p>
     `,
