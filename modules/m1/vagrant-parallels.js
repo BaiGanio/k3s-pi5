@@ -94,7 +94,7 @@ window.pageBlocks = [
   {
     type: 'note',
     variant: 'tip',
-    content: 'Always use an <strong>ARM64 box</strong> on Apple Silicon. An x86_64 box either refuses to run or crawls through emulation. The <code>bento/ubuntu-22.04-arm64</code> box by Chef is regularly maintained and well-tested on Parallels — it is the safe default choice.',
+    content: 'Always use an <strong>ARM64 box</strong> on Apple Silicon. An x86_64 box either refuses to run or crawls through emulation. The <code>bento/ubuntu-24.04-arm64</code> box by Chef is regularly maintained and well-tested on Parallels — it is the safe default choice. Check latest supported boxes at <a href="https://portal.cloud.hashicorp.com/vagrant/discover?architectures=arm64&query=ubuntu" target="_blank">HCP Vagrant Registry</a>.</p>',
   },
 
   {
@@ -105,9 +105,9 @@ window.pageBlocks = [
       {
         id: 201,
         commandTitle: 'Create a project folder and initialize a box',
-        command: 'mkdir dev-env && cd dev-env && vagrant init bento/ubuntu-22.04-arm64',
+        command: 'mkdir dev-env && cd dev-env && vagrant init bento/ubuntu-24.04-arm64',
         searchTerms: 'vagrant init bento ubuntu arm64 vagrantfile mkdir project folder',
-        description: 'Creates a new project directory, enters it, and generates a <code>Vagrantfile</code> pre-configured to use the <code>bento/ubuntu-22.04-arm64</code> box — a clean, minimal Ubuntu 22.04 image compiled for ARM64.',
+        description: 'Creates a new project directory, enters it, and generates a <code>Vagrantfile</code> pre-configured to use the <code>bento/ubuntu-24.04-arm64</code> box — a clean, minimal Ubuntu 24.04 image compiled for ARM64.',
         parts: [
           { text: 'mkdir dev-env && cd dev-env', explanation: 'each Vagrant project lives in its own folder — the Vagrantfile and .vagrant/ state directory both go here' },
           { text: 'vagrant init', explanation: 'generates a Vagrantfile in the current directory with the named box as the base image' },
