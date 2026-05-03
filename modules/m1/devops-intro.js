@@ -1,386 +1,308 @@
 // modules/m1-devops-intro.js
-// M1: Introduction to DevOps
+// M1: Introduction to DevOps — From Local Dev to Production
 
-window.commandData = [
+window.pageBlocks = [
 
-  // ── Part 1: VirtualBox ────────────────────────────────────────────────────
-
-  {
-    id: 101,
-    section: "virtualbox",
-    sectionTitle: "Part 1 – Install VirtualBox",
-    commandTitle: "Add VirtualBox repo & install",
-    command: "wget http://download.virtualbox.org/virtualbox/rpm/rhel/virtualbox.repo && sudo mv virtualbox.repo /etc/yum.repos.d/ && sudo yum update -y && sudo yum install -y gcc make kernel-headers kernel-devel && sudo yum install -y VirtualBox-5.2 && sudo usermod -a -G vboxusers devops",
-    searchTerms: "virtualbox install yum wget repo rhel centos",
-    description: "Downloads the official VirtualBox RPM repository file, moves it into the yum repo directory, updates the system, installs the kernel build tools VirtualBox needs, then installs VirtualBox 5.2 itself. Finally adds the <code>devops</code> user to the <code>vboxusers</code> group so it can run VMs without root.",
-    parts: [
-      { text: "wget …/virtualbox.repo", explanation: "downloads the repo definition file from VirtualBox's CDN" },
-      { text: "sudo mv … /etc/yum.repos.d/", explanation: "places the repo file where yum can discover it" },
-      { text: "sudo yum update -y", explanation: "refreshes package lists and upgrades existing packages" },
-      { text: "sudo yum install -y gcc make kernel-headers kernel-devel", explanation: "installs C compiler and kernel source files — required to compile VirtualBox kernel modules" },
-      { text: "sudo yum install -y VirtualBox-5.2", explanation: "installs VirtualBox 5.2 from the newly added repo" },
-      { text: "sudo usermod -a -G vboxusers devops", explanation: "adds the devops user to the vboxusers group — required for USB and full VM access" },
-    ],
-    example: "Loaded plugins: fastestmirror\n...\nInstalled: VirtualBox-5.2.x86_64\nComplete!",
-    why: "VirtualBox must be installed with its kernel modules compiled against the running kernel. The kernel-headers/devel packages supply the headers needed for that compilation.",
-  },
-
-  // ── Part 2: Manual Approach — DOB-WEB ────────────────────────────────────
+  // ── What is DevOps? ───────────────────────────────────────────────────────
 
   {
-    id: 201,
-    section: "dob-web",
-    sectionTitle: "Part 2 – DOB-WEB Setup",
-    commandTitle: "Set hostname to dob-web",
-    command: "sudo hostnamectl set-hostname dob-web",
-    searchTerms: "hostname hostnamectl set rename machine",
-    description: "Permanently changes the machine's hostname to <code>dob-web</code>. The change takes effect on next login.",
-    parts: [
-      { text: "sudo", explanation: "run as superuser" },
-      { text: "hostnamectl", explanation: "systemd tool to query and change the system hostname" },
-      { text: "set-hostname", explanation: "sub-command that writes the new name" },
-      { text: "dob-web", explanation: "the desired hostname — identifies this VM as the web server" },
-    ],
-    example: "# (no output on success — re-login to see the new prompt)",
-    why: "A meaningful hostname makes it easy to identify which machine you're on and is used by services for self-identification.",
+    type: 'prose',
+    title: 'What is DevOps?',
+    content: `
+      <p>
+        <strong>DevOps</strong> is not a tool, a job title, or a team. It is a <strong>cultural
+        and technical movement</strong> that aims to break down the traditional silos between
+        development (writing code) and operations (running code in production).
+      </p>
+
+      <h4>The "Throw It Over the Wall" Anti-Pattern</h4>
+      <p>
+        In traditional organisations, developers write code and then "throw it over the wall"
+        to operations. The operations team is responsible for deploying, monitoring, and keeping
+        it alive — often without understanding how the application works internally. This leads to:
+      </p>
+      <ul>
+        <li><strong>"Works on my machine"</strong> — differences between dev and prod environments</li>
+        <li><strong>Fear of deployment</strong> — releases happen once a quarter because they're risky</li>
+        <li><strong>Blamelessness failure</strong> — ops blames devs for bad code; devs blame ops for bad infrastructure</li>
+        <li><strong>Long lead times</strong> — months from code commit to production</li>
+      </ul>
+
+      <h4>The DevOps Approach</h4>
+      <p>
+        DevOps applies lean manufacturing principles (from Toyota) and systems thinking to software delivery.
+        The goal is <strong>shared ownership</strong> across the entire lifecycle:
+      </p>
+      <ul>
+        <li>Developers understand the production environment — they write code that is <em>deployable</em></li>
+        <li>Operations understand the application — they contribute to monitoring and reliability requirements</li>
+        <li>Infrastructure is defined as code — version-controlled, reviewed, tested</li>
+        <li>Deployments are small, frequent, and reversible — not terrifying events</li>
+      </ul>
+    `,
   },
+
+  // ── The Three Ways ────────────────────────────────────────────────────────
 
   {
-    id: 202,
-    section: "dob-web",
-    sectionTitle: "Part 2 – DOB-WEB Setup",
-    commandTitle: "Install Node.js and Git",
-    command: "curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash - && sudo yum install -y nodejs git",
-    searchTerms: "nodejs node npm git install yum nodesource web server",
-    description: "Adds the NodeSource repository for Node.js 18 LTS, then installs the <code>nodejs</code> package (which includes <code>npm</code>) and <code>git</code> for cloning the project repository.",
-    parts: [
-      { text: "curl -fsSL … | sudo bash -", explanation: "downloads and executes the NodeSource setup script, which registers the Node.js 18 yum repo" },
-      { text: "sudo yum install -y nodejs", explanation: "installs Node.js and npm from the newly added NodeSource repo" },
-      { text: "git", explanation: "version control tool — used to clone the project" },
-    ],
-    example: "Installed:\n  nodejs.x86_64  git.x86_64\nComplete!\n$ node --version\nv18.20.4\n$ npm --version\n10.7.0",
-    why: "Node.js is not in the default CentOS repos at a modern version. The NodeSource script registers an upstream repo so yum can install and update it like any other package.",
+    type: 'note',
+    variant: 'info',
+    content: `
+      <strong>The Three Ways of DevOps</strong> (from <em>The DevOps Handbook</em> by Gene Kim et al.):
+      <ol style="margin-top: 0.5rem; padding-left: 1.5rem;">
+        <li><strong>Flow</strong> — fast, predictable movement of work from dev to operations to customer</li>
+        <li><strong>Feedback</strong> — short, rapid feedback loops so problems are caught early</li>
+        <li><strong>Continuous learning</strong> — experimentation and improvement become routine</li>
+      </ol>
+    `,
   },
+
+  // ── The Reproducible Environment Problem ─────────────────────────────────
 
   {
-    id: 203,
-    section: "dob-web",
-    sectionTitle: "Part 2 – DOB-WEB Setup",
-    commandTitle: "Install app dependencies & create systemd service",
-    command: "cd /home/devops/dob-module-1 && npm install && sudo cp dob-web.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable dob-web && sudo systemctl start dob-web",
-    searchTerms: "npm install systemctl enable start node service systemd daemon",
-    description: "Installs the project's npm dependencies, registers the Node.js app as a systemd service, reloads the daemon so systemd picks up the new unit file, then enables and starts the service.",
-    parts: [
-      { text: "npm install", explanation: "reads package.json and downloads all declared dependencies into node_modules/" },
-      { text: "sudo cp dob-web.service /etc/systemd/system/", explanation: "places the systemd unit file where systemd can find it" },
-      { text: "sudo systemctl daemon-reload", explanation: "tells systemd to re-scan unit files after adding or changing one" },
-      { text: "sudo systemctl enable dob-web", explanation: "creates a symlink so systemd starts the app on every boot" },
-      { text: "sudo systemctl start dob-web", explanation: "starts the Node.js app right now without requiring a reboot" },
-    ],
-    example: "added 97 packages in 4.2s\nCreated symlink /etc/systemd/system/multi-user.target.wants/dob-web.service",
-    why: "Running a Node.js app as a systemd service gives you automatic restarts on crash, boot-time startup, and standard log integration via journald — without a process manager like pm2.",
+    type: 'prose',
+    title: 'The Core Problem: Environment Drift',
+    content: `
+      <p>
+        Every piece of software runs <em>somewhere</em> — on a laptop, a staging server, or a
+        production data centre. The environment includes:
+      </p>
+      <ul>
+        <li>The operating system and its version</li>
+        <li>System libraries (OpenSSL, glibc, zlib)</li>
+        <li>Language runtimes (Node.js, Python, Java, Go)</li>
+        <li>Databases, message queues, caches</li>
+        <li>Configuration files and environment variables</li>
+        <li>Network topology (firewalls, load balancers, DNS)</li>
+      </ul>
+
+      <p>
+        <strong>Environment drift</strong> happens when these slowly diverge across environments.
+        Your laptop has Node 20, staging has Node 18, production has Node 16 — and one day, a
+        dependency starts using a feature that only exists in Node 20. The code passes all tests
+        locally but fails silently in production.
+      </p>
+
+      <h4>The Pre-DevOps Fix: Documentation</h4>
+      <p>
+        "Install PostgreSQL 16. Run 'npm install'. Set these five environment variables."
+        Wikis, READMEs, and onboarding documents. They go stale the moment they're written.
+      </p>
+
+      <h4>The DevOps Fix: Infrastructure as Code (IaC)</h4>
+      <p>
+        Instead of documenting how to set up an environment, you <strong>encode it in files</strong>
+        that are version-controlled, reviewed, and executed. The same definition builds your
+        laptop VM, your CI pipeline, your staging environment, and — when extended carefully —
+        your production infrastructure.
+      </p>
+    `,
   },
+
+  // ── A Taste of Infrastructure as Code ────────────────────────────────────
 
   {
-    id: 204,
-    section: "dob-web",
-    sectionTitle: "Part 2 – DOB-WEB Setup",
-    commandTitle: "Open app port in firewall",
-    command: "sudo firewall-cmd --add-port=3000/tcp --permanent && sudo firewall-cmd --reload",
-    searchTerms: "firewall-cmd port 3000 open permanent reload firewalld node",
-    description: "Opens TCP port 3000 (the port the Node.js/Express app listens on) permanently in firewalld and reloads the active ruleset to apply it immediately.",
-    parts: [
-      { text: "sudo firewall-cmd", explanation: "command-line interface to firewalld" },
-      { text: "--add-port=3000/tcp", explanation: "opens TCP port 3000 — the default Express development port" },
-      { text: "--permanent", explanation: "writes the rule to disk so it persists after reboot" },
-      { text: "--reload", explanation: "applies the saved rules to the running firewall without dropping existing connections" },
+    type: 'commands',
+    section: 'taste',
+    sectionTitle: 'A Taste of Infrastructure as Code',
+    items: [
+      {
+        id: 10,
+        commandTitle: 'Define a complete web server in 5 lines',
+        command: 'cat Vagrantfile',
+        searchTerms: 'vagrantfile example simple web server nodejs',
+        description: 'This tiny Vagrantfile defines a complete Ubuntu web server with Node.js — all in version-controlled text. No clicking through installers, no "I ran these commands last month but forgot which ones".',
+        parts: [
+          { text: 'config.vm.box', explanation: 'the base OS image — Ubuntu 24.04 for ARM64' },
+          { text: 'config.vm.network "forwarded_port"', explanation: 'maps port 3000 from the VM to your Mac — open localhost:3000 in your browser' },
+          { text: 'config.vm.provision "shell"', explanation: 'runs these commands once on first boot — installs Node.js and starts your app' },
+        ],
+        example: `Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-24.04-arm64"
+  config.vm.network "forwarded_port", guest: 3000, host: 3000
+  config.vm.provision "shell", inline: <<-SHELL
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+    npm install -g serve
+    serve -s /var/www -l 3000 &
+  SHELL
+end`,
+        why: 'This file is the single source of truth. Commit it to Git. Any developer on your team gets an identical environment with one command: <code>vagrant up</code>.',
+      },
+      {
+        id: 11,
+        commandTitle: 'Spin up the environment from nothing',
+        command: 'vagrant up --provider parallels',
+        searchTerms: 'vagrant up start vm from scratch infrastructure as code',
+        description: 'One command downloads the OS image, creates the VM, configures networking, installs Node.js, and starts your application. No manual steps, no hidden dependencies, no "works on my machine" surprises.',
+        parts: [
+          { text: 'vagrant up', explanation: 'the main IaC command — brings infrastructure from zero to running' },
+          { text: '--provider parallels', explanation: 'chooses which hypervisor to use (Parallels, VMware, or VirtualBox)' },
+        ],
+        example: 'Bringing machine \'default\' up with \'parallels\' provider...\n==> default: Box \'bento/ubuntu-24.04-arm64\' could not be found. Installing now...\n==> default: Machine booted and ready!\n==> default: Running provisioner: shell...\n    default: Installing Node.js 20...\n    default: Starting web server on port 3000...',
+        why: 'This is the DevOps payoff — reproducible environments on demand. A new hire runs this and gets the exact same setup as the senior dev with 10 years of experience.',
+      },
+      {
+        id: 12,
+        commandTitle: 'Destroy and rebuild in minutes',
+        command: 'vagrant destroy --force && vagrant up',
+        searchTerms: 'vagrant destroy rebuild clean reset disposable infrastructure',
+        description: 'Destroys the VM completely, then recreates it from scratch. This is the "disposable infrastructure" mindset — if something is broken or suspicious, you don\'t debug it. You destroy and rebuild.',
+        parts: [
+          { text: 'vagrant destroy', explanation: 'deletes the VM entirely — frees disk space, wipes all state' },
+          { text: 'vagrant up', explanation: 'rebuilds from the same Vagrantfile — returns to a known good state' },
+        ],
+        example: '==> default: Deleting the machine...\n==> default: Box \'bento/ubuntu-24.04-arm64\' already cached. Reusing...\n==> default: Machine booted and ready!\nTotal time: 47 seconds — back to a clean environment',
+        why: 'Traditional ops treats servers as pets — you nurse them back to health when sick. DevOps treats servers as cattle — if sick, you replace. This mindset is only possible with Infrastructure as Code.',
+      },
     ],
-    example: "success\nsuccess",
-    why: "By default firewalld blocks all inbound traffic. Without this rule, browsers and API clients on the host network cannot reach the Express server.",
   },
+
+  // ── The IaC Spectrum ──────────────────────────────────────────────────────
 
   {
-    id: 205,
-    section: "dob-web",
-    sectionTitle: "Part 2 – DOB-WEB Setup",
-    commandTitle: "Clone the project repository",
-    command: "git clone https://github.com/shekeriev/dob-module-1",
-    searchTerms: "git clone github project repo clone",
-    description: "Clones the lab project from GitHub into a local directory called <code>dob-module-1</code>. This pulls down the Node.js application files, <code>package.json</code>, and the database setup SQL script.",
-    parts: [
-      { text: "git", explanation: "version control system" },
-      { text: "clone", explanation: "creates a local copy of a remote repository" },
-      { text: "https://github.com/shekeriev/dob-module-1", explanation: "the remote repository URL" },
-    ],
-    example: "Cloning into 'dob-module-1'...\nremote: Counting objects: 42, done.\nReceiving objects: 100% (42/42), done.",
-    why: "Cloning from a central repository is the standard way to distribute application code — it also gives you the full Git history.",
+    type: 'prose',
+    title: 'Where Vagrant Fits in the IaC Ecosystem',
+    content: `
+      <p>
+        "Infrastructure as Code" covers a spectrum. Vagrant handles the foundation — local development VMs.
+      </p>
+
+      <h4>Layer 1: Machine Definition (Vagrant) — YOU ARE HERE</h4>
+      <p>
+        <strong>What it does:</strong> Defines a single VM — OS, memory, CPU, networks, provisioners.<br>
+        <strong>The file:</strong> <code>Vagrantfile</code>
+      </p>
+
+      <h4>Layer 2: Configuration Management (Ansible, Chef, Puppet)</h4>
+      <p>
+        <strong>What it does:</strong> Installs and configures software inside machines.<br>
+        <strong>The files:</strong> Playbooks (<code>.yml</code>), cookbooks, manifests
+      </p>
+
+      <h4>Layer 3: Image Building (Packer)</h4>
+      <p>
+        <strong>What it does:</strong> Creates <em>golden images</em> — pre-baked VMs with everything installed.<br>
+        <strong>The file:</strong> <code>template.pkr.hcl</code>
+      </p>
+
+      <h4>Layer 4: Cloud Provisioning (Terraform)</h4>
+      <p>
+        <strong>What it does:</strong> Manages cloud resources — VPCs, load balancers, databases.<br>
+        <strong>The file:</strong> <code>.tf</code> (HashiCorp Configuration Language)
+      </p>
+
+      <p>
+        <strong>You start with Vagrant</strong> because it's the closest to real servers.
+        Every command you learn (SSH, systemd, journalctl, firewall config) transfers directly to production.
+      </p>
+    `,
   },
+
+  // ── Why VMs Over Containers for Learning ─────────────────────────────────
 
   {
-    id: 206,
-    section: "dob-web",
-    sectionTitle: "Part 2 – DOB-WEB Setup",
-    commandTitle: "Fix SELinux so Node.js can reach the network",
-    command: "sudo setsebool -P httpd_can_network_connect=1",
-    searchTerms: "selinux setsebool network connect boolean node nodejs",
-    description: "Sets the SELinux boolean <code>httpd_can_network_connect</code> to true permanently. Despite the name this boolean controls outbound network connections for any process in the <code>httpd_t</code> domain — which includes Node.js apps managed by systemd on CentOS 7.",
-    parts: [
-      { text: "sudo setsebool", explanation: "sets an SELinux boolean policy value" },
-      { text: "-P", explanation: "make the change persistent across reboots" },
-      { text: "httpd_can_network_connect=1", explanation: "allows the process to initiate outbound network connections — needed for the app to reach the PostgreSQL server" },
-    ],
-    example: "# (no output — takes a few seconds to apply policy)",
-    why: "SELinux enforces mandatory access control on top of standard Unix permissions. Even if firewall and file permissions are correct, SELinux can still silently block the Node.js app from connecting to the database server.",
+    type: 'note',
+    variant: 'tip',
+    content: `
+      <strong>Why Vagrant VMs instead of Docker Compose?</strong> Docker Desktop runs a hidden Linux VM
+      under the hood anyway. Vagrant gives you full control over that VM — you see the kernel boot,
+      you configure real network interfaces, you manage systemd services. These are <em>exactly</em>
+      the skills you need to manage production Linux servers. Docker abstracts them away.
+    `,
   },
 
-  // ── Part 2: Manual Approach — DOB-DB ─────────────────────────────────────
+  // ── The DevOps Loop ──────────────────────────────────────────────────────
 
   {
-    id: 301,
-    section: "dob-db",
-    sectionTitle: "Part 2 – DOB-DB Setup",
-    commandTitle: "Set hostname to dob-db",
-    command: "sudo hostnamectl set-hostname dob-db",
-    searchTerms: "hostname hostnamectl dob-db rename",
-    description: "Permanently renames this VM to <code>dob-db</code> to identify it as the database server.",
-    parts: [
-      { text: "sudo hostnamectl set-hostname", explanation: "systemd command to change the system hostname" },
-      { text: "dob-db", explanation: "the new hostname — identifies this machine as the database server" },
-    ],
-    example: "# Re-login to see the updated shell prompt: [devops@dob-db ~]$",
-    why: "Clear hostnames prevent confusion when you have multiple terminals open to different VMs.",
+    type: 'prose',
+    title: 'Closing the Loop: From Local to Production',
+    content: `
+      <p>
+        The two-VM environment you'll build in the next modules is not just a local playground.
+        It models a real deployment pipeline:
+      </p>
+
+      <h4>Development (Your Mac)</h4>
+      <ul>
+        <li>Write code on your Mac, synced into <code>app-web</code> VM</li>
+        <li>Test against <code>app-db</code> VM (PostgreSQL) on a private network</li>
+        <li>Commit and push to Git</li>
+      </ul>
+
+      <h4>Continuous Integration (CI Pipeline)</h4>
+      <ul>
+        <li>CI server downloads the same Vagrantfile from your repo</li>
+        <li>Runs <code>vagrant up --provider ...</code> on a cloud VM runner</li>
+        <li>Automated tests run against the identical two-VM setup</li>
+        <li>VMs are destroyed after tests complete — clean slate every time</li>
+      </ul>
+
+      <h4>Production Deployment</h4>
+      <ul>
+        <li>The same Ansible playbook that provisioned your local VMs runs against production servers</li>
+        <li>Or: Packer builds an AMI using the same provisioner scripts</li>
+        <li>Or: Terraform launches cloud VMs configured identically to your local definition</li>
+      </ul>
+
+      <p>
+        The <strong>artifact that travels through this pipeline</strong> is not a binary or a container
+        image — it's the <em>definition of the infrastructure itself</em>. That's Infrastructure as Code.
+      </p>
+    `,
   },
+
+  // ── Common DevOps Anti-Patterns ──────────────────────────────────────────
 
   {
-    id: 302,
-    section: "dob-db",
-    sectionTitle: "Part 2 – DOB-DB Setup",
-    commandTitle: "Install PostgreSQL server & client",
-    command: "sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm && sudo yum install -y postgresql16-server postgresql16",
-    searchTerms: "postgresql postgres install yum database server client pgdg",
-    description: "Adds the official PostgreSQL Global Development Group (PGDG) repository, then installs the PostgreSQL 16 server daemon and its command-line client <code>psql</code>.",
-    parts: [
-      { text: "sudo yum install -y …pgdg-redhat-repo-latest…", explanation: "registers the official PGDG yum repo — required because CentOS 7 only ships an older PostgreSQL version" },
-      { text: "postgresql16-server", explanation: "the PostgreSQL 16 server daemon (postgres)" },
-      { text: "postgresql16", explanation: "the psql command-line client and shared libraries" },
-    ],
-    example: "Installed:\n  postgresql16.x86_64  postgresql16-server.x86_64\nComplete!\n$ psql --version\npsql (PostgreSQL) 16.3",
-    why: "The PostgreSQL version in the default CentOS repos is outdated. The PGDG repo provides current releases with full feature support and security updates.",
+    type: 'note',
+    variant: 'warning',
+    content: `
+      <strong>Common DevOps Anti-Patterns (Avoid These)</strong>
+      <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+        <li><strong>Snowflake Servers:</strong> "Let me just SSH in and fix this one thing manually" — now that server is unique and unreproducible</li>
+        <li><strong>Configuration Drift:</strong> Running provisioners on a server that already has manual changes — leads to unpredictable results</li>
+        <li><strong>Golden Image Amnesia:</strong> Building an image without versioning or documentation — nobody knows what\'s inside it</li>
+        <li><strong>CI That Doesn\'t Test Infrastructure:</strong> Testing the application code but never testing the provisioning scripts</li>
+        <li><strong>Production Credentials in Dev:</strong> Using real database passwords or API keys in a local Vagrantfile</li>
+      </ul>
+    `,
   },
+
+  // ── What You'll Build ─────────────────────────────────────────────────────
 
   {
-    id: 303,
-    section: "dob-db",
-    sectionTitle: "Part 2 – DOB-DB Setup",
-    commandTitle: "Initialise, enable & start PostgreSQL",
-    command: "sudo /usr/pgsql-16/bin/postgresql-16-setup initdb && sudo systemctl enable postgresql-16 && sudo systemctl start postgresql-16",
-    searchTerms: "postgresql initdb enable start systemctl postgres service autostart",
-    description: "Initialises the PostgreSQL data directory (required once before first start), configures the service to start at boot, then starts it immediately.",
-    parts: [
-      { text: "postgresql-16-setup initdb", explanation: "creates the initial database cluster in /var/lib/pgsql/16/data/ — must be run before the first start" },
-      { text: "sudo systemctl enable postgresql-16", explanation: "configures PostgreSQL to start automatically on boot" },
-      { text: "&&", explanation: "chain: run next only if previous succeeded" },
-      { text: "sudo systemctl start postgresql-16", explanation: "starts the PostgreSQL daemon right now" },
-    ],
-    example: "Initializing database ... OK\nCreated symlink … postgresql-16.service → …",
-    why: "PostgreSQL requires an explicit initdb step to lay down the data directory and system catalogs before the server can start — unlike MariaDB which auto-initialises on first boot.",
+    type: 'prose',
+    title: 'What You\'ll Build in the Next Modules',
+    content: `
+      <p>
+        By the end of the next two modules (Parallels and VMware), you will have built a
+        fully reproducible, two-machine infrastructure from scratch. You will understand:
+      </p>
+
+      <h4>Technical Skills</h4>
+      <ul>
+        <li>Writing and reading a declarative <code>Vagrantfile</code> for multiple VMs</li>
+        <li>Managing a web tier (<code>app-web</code> with Node.js) and a database tier (<code>app-db</code> with PostgreSQL)</li>
+        <li>Configuring private networking so VMs can talk to each other</li>
+        <li>Using shell provisioners idempotently</li>
+        <li>Port forwarding, firewall rules, and systemd services</li>
+      </ul>
+
+      <h4>DevOps Mindset Shifts</h4>
+      <ul>
+        <li><strong>Servers are disposable.</strong> <code>vagrant destroy</code> is freedom, not fear.</li>
+        <li><strong>The definition is the truth.</strong> If it's not in the Vagrantfile, it doesn't exist.</li>
+        <li><strong>Your laptop is not special.</strong> Any teammate, any CI runner can run the same definition.</li>
+        <li><strong>Configuration is code.</strong> It can be reviewed, versioned, tested, and debugged.</li>
+      </ul>
+
+      <p>
+        This is not just about learning a tool. It's about learning a philosophy: <strong>treating
+        infrastructure as code, servers as disposable, and environments as reproducible artifacts.</strong>
+        These ideas scale from your laptop to the largest cloud deployments. Ready to get hands-on?
+      </p>
+    `,
   },
 
-  {
-    id: 304,
-    section: "dob-db",
-    sectionTitle: "Part 2 – DOB-DB Setup",
-    commandTitle: "Create database user and database",
-    command: "sudo -u postgres psql -c \"CREATE USER devops WITH PASSWORD 'secret';\" && sudo -u postgres psql -c \"CREATE DATABASE dobapp OWNER devops;\"",
-    searchTerms: "postgres psql create user database role password owner",
-    description: "Connects to PostgreSQL as the <code>postgres</code> superuser and runs two SQL statements: one to create an application user with a password, and one to create the application database owned by that user.",
-    parts: [
-      { text: "sudo -u postgres", explanation: "runs the following command as the postgres OS user — the default superuser account created by the installer" },
-      { text: "psql -c \"…\"", explanation: "executes a single SQL statement and exits — no interactive shell needed" },
-      { text: "CREATE USER devops WITH PASSWORD 'secret'", explanation: "creates a PostgreSQL role that the Node.js app will use to authenticate" },
-      { text: "CREATE DATABASE dobapp OWNER devops", explanation: "creates the application database and gives full ownership to the devops role" },
-    ],
-    example: "CREATE ROLE\nCREATE DATABASE",
-    why: "Applications should never connect as the postgres superuser. A dedicated role with only the permissions it needs limits the blast radius of a compromised connection string.",
-  },
-
-  {
-    id: 305,
-    section: "dob-db",
-    sectionTitle: "Part 2 – DOB-DB Setup",
-    commandTitle: "Copy DB setup script from web VM via SCP",
-    command: "scp devops@IP:/home/devops/dob-module-1/db*.sql .",
-    searchTerms: "scp copy ssh file transfer db sql script remote",
-    description: "Securely copies all SQL files matching <code>db*.sql</code> from the dob-web machine into the current directory on dob-db.",
-    parts: [
-      { text: "scp", explanation: "Secure Copy — transfers files over SSH" },
-      { text: "devops@IP:", explanation: "user and IP address of the source machine (dob-web)" },
-      { text: "/home/devops/dob-module-1/db*.sql", explanation: "glob pattern matching all SQL files in the cloned repo" },
-      { text: ".", explanation: "destination: current directory on dob-db" },
-    ],
-    example: "db_setup.sql                  100% 1234     1.2MB/s   00:00",
-    why: "The SQL setup script lives on dob-web where the repo was cloned. SCP moves it over SSH without extra tools.",
-  },
-
-  {
-    id: 306,
-    section: "dob-db",
-    sectionTitle: "Part 2 – DOB-DB Setup",
-    commandTitle: "Run the DB setup script",
-    command: "psql -U devops -d dobapp -f db_setup.sql",
-    searchTerms: "psql run script sql file database setup postgres",
-    description: "Connects to the <code>dobapp</code> database as the <code>devops</code> user and executes the SQL setup script, creating the schema, tables, and seed data.",
-    parts: [
-      { text: "psql", explanation: "PostgreSQL interactive terminal / batch SQL runner" },
-      { text: "-U devops", explanation: "connect as the devops database role" },
-      { text: "-d dobapp", explanation: "the target database to connect to" },
-      { text: "-f db_setup.sql", explanation: "read and execute SQL from this file instead of an interactive prompt" },
-    ],
-    example: "CREATE TABLE\nINSERT 0 5\nCREATE INDEX",
-    why: "Using <code>-f</code> to feed a file is the standard way to execute a batch of SQL statements repeatably — the same file can be re-run in CI or against a fresh DB.",
-  },
-
-  {
-    id: 307,
-    section: "dob-db",
-    sectionTitle: "Part 2 – DOB-DB Setup",
-    commandTitle: "Open PostgreSQL port in firewall",
-    command: "sudo firewall-cmd --add-port=5432/tcp --permanent && sudo firewall-cmd --reload",
-    searchTerms: "firewall-cmd 5432 postgresql postgres port open tcp permanent",
-    description: "Opens TCP port 5432 (the default PostgreSQL port) permanently in firewalld and reloads the active ruleset.",
-    parts: [
-      { text: "--add-port=5432/tcp", explanation: "opens TCP port 5432 — the standard PostgreSQL listen port" },
-      { text: "--permanent", explanation: "persists the rule across reboots" },
-      { text: "--reload", explanation: "activates the new rules immediately without dropping existing connections" },
-    ],
-    example: "success\nsuccess",
-    why: "The Node.js app on dob-web connects to dob-db on port 5432 — firewalld must allow it or every database query will time out.",
-  },
-
-  {
-    id: 308,
-    section: "dob-db",
-    sectionTitle: "Part 2 – DOB-DB Setup",
-    commandTitle: "Allow remote connections in pg_hba.conf",
-    command: "sudo bash -c \"echo 'host  dobapp  devops  0.0.0.0/0  md5' >> /var/lib/pgsql/16/data/pg_hba.conf\" && sudo systemctl reload postgresql-16",
-    searchTerms: "pg_hba.conf postgres remote connection md5 host authentication",
-    description: "Appends a host-based authentication rule to <code>pg_hba.conf</code> that allows the <code>devops</code> user to connect to <code>dobapp</code> from any IP using a password (md5), then reloads PostgreSQL to apply the change.",
-    parts: [
-      { text: "echo 'host  dobapp  devops  0.0.0.0/0  md5'", explanation: "the HBA rule: connection type (host), database, user, CIDR range, auth method" },
-      { text: ">> /var/lib/pgsql/16/data/pg_hba.conf", explanation: "appends the rule to PostgreSQL's host-based authentication config file" },
-      { text: "sudo systemctl reload postgresql-16", explanation: "sends SIGHUP to postgres, causing it to re-read pg_hba.conf without restarting" },
-    ],
-    example: "# (no output — verify with: sudo systemctl status postgresql-16)",
-    why: "PostgreSQL rejects all remote connections by default. pg_hba.conf is the access control list that determines who can connect, from where, and how they must authenticate.",
-  },
-
-  // ── Part 3: Vagrant ───────────────────────────────────────────────────────
-
-  {
-    id: 401,
-    section: "vagrant",
-    sectionTitle: "Part 3 – Vagrant",
-    commandTitle: "Download & install Vagrant RPM",
-    command: "wget https://releases.hashicorp.com/vagrant/2.1.5/vagrant_2.1.5_x86_64.rpm && sudo rpm -ivh vagrant_2.1.5_x86_64.rpm",
-    searchTerms: "vagrant install rpm hashicorp download wget",
-    description: "Downloads the Vagrant 2.1.5 RPM package from HashiCorp and installs it.",
-    parts: [
-      { text: "wget …vagrant_2.1.5_x86_64.rpm", explanation: "downloads the RPM from HashiCorp's release server" },
-      { text: "sudo rpm -ivh", explanation: "installs (-i) the RPM with verbose output (-v) and a progress bar (-h)" },
-    ],
-    example: "Preparing...  ################################# [100%]\nInstalling vagrant-2.1.5-1.x86_64",
-    why: "Vagrant is not in standard RHEL/CentOS repos so it must be fetched directly from HashiCorp.",
-  },
-
-  {
-    id: 402,
-    section: "vagrant",
-    sectionTitle: "Part 3 – Vagrant",
-    commandTitle: "Initialize a Vagrant box",
-    command: "vagrant init shekeriev/centos-7-64-minimal",
-    searchTerms: "vagrant init vagrantfile box initialize centos",
-    description: "Creates a <code>Vagrantfile</code> in the current directory pre-configured to use the specified box from Vagrant Cloud.",
-    parts: [
-      { text: "vagrant init", explanation: "generates a Vagrantfile in the current directory" },
-      { text: "shekeriev/centos-7-64-minimal", explanation: "the base box — fetched from Vagrant Cloud" },
-    ],
-    example: "A `Vagrantfile` has been placed in this directory. You are now ready to `vagrant up`!",
-    why: "The Vagrantfile is the declarative definition of your VM — box, memory, networking, provisioning.",
-  },
-
-  {
-    id: 403,
-    section: "vagrant",
-    sectionTitle: "Part 3 – Vagrant",
-    commandTitle: "Start the Vagrant VM",
-    command: "vagrant up",
-    searchTerms: "vagrant up start boot provision vm",
-    description: "Reads the Vagrantfile, downloads the base box if not cached, creates the VirtualBox VM, and provisions it.",
-    parts: [
-      { text: "vagrant up", explanation: "creates and starts the VM, running all provisioners defined in the Vagrantfile" },
-    ],
-    example: "Bringing machine 'default' up with 'virtualbox' provider...\n==> default: Machine booted and ready!",
-    why: "vagrant up replaces the entire manual VM import + configure + start workflow.",
-  },
-
-  {
-    id: 404,
-    section: "vagrant",
-    sectionTitle: "Part 3 – Vagrant",
-    commandTitle: "SSH into the Vagrant VM",
-    command: "vagrant ssh",
-    searchTerms: "vagrant ssh shell connect login terminal",
-    description: "Opens an SSH session to the running VM without needing to know the IP, port, or key path.",
-    parts: [
-      { text: "vagrant ssh", explanation: "opens an interactive SSH session using Vagrant's auto-managed key pair" },
-    ],
-    example: "Welcome to CentOS Linux 7 (Core)\n[vagrant@localhost ~]$",
-    why: "Vagrant auto-configures SSH key-based auth — no manual key management needed.",
-  },
-
-  {
-    id: 405,
-    section: "vagrant",
-    sectionTitle: "Part 3 – Vagrant",
-    commandTitle: "List all Vagrant machines",
-    command: "vagrant global-status",
-    searchTerms: "vagrant global-status list all vms running status",
-    description: "Shows all Vagrant-managed VMs on the host across all project directories, with their state and Vagrantfile path.",
-    parts: [
-      { text: "vagrant global-status", explanation: "queries Vagrant's global index of all known machines on this host" },
-    ],
-    example: "id       name    provider   state   directory\n-------------------------------------------------------\n1a2b3c4  default virtualbox running  /home/user/Vagrant/dob-m1-1",
-    why: "Gives a bird's-eye view of everything running when working with multiple Vagrantfiles.",
-  },
-
-  {
-    id: 406,
-    section: "vagrant",
-    sectionTitle: "Part 3 – Vagrant",
-    commandTitle: "List cached Vagrant boxes",
-    command: "vagrant box list",
-    searchTerms: "vagrant box list cached downloaded images",
-    description: "Lists all box images downloaded and cached locally. Boxes are reused across VMs to avoid re-downloading.",
-    parts: [
-      { text: "vagrant box list", explanation: "shows all locally cached boxes with name, provider, and version" },
-    ],
-    example: "shekeriev/centos-7-64-minimal  (virtualbox, 7.0.0)",
-    why: "Box images can be several hundred MB. Knowing what's cached helps avoid redundant downloads.",
-  },
-
-  {
-    id: 407,
-    section: "vagrant",
-    sectionTitle: "Part 3 – Vagrant",
-    commandTitle: "Destroy the Vagrant VM",
-    command: "vagrant destroy --force",
-    searchTerms: "vagrant destroy delete remove vm cleanup force",
-    description: "Stops and completely deletes the VM and all its virtual disks. <code>--force</code> skips the confirmation prompt.",
-    parts: [
-      { text: "vagrant destroy", explanation: "stops the VM and removes all disk images and VirtualBox config" },
-      { text: "--force", explanation: "skips the 'Are you sure?' confirmation" },
-    ],
-    example: "==> default: Forcing shutdown of VM...\n==> default: Destroying VM and associated drives...",
-    why: "Vagrant VMs are ephemeral — destroy freely to reclaim disk space and ensure a clean slate.",
-  },
 ];
