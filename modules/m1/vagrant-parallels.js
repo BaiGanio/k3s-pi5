@@ -154,80 +154,7 @@ window.pageBlocks = [
     ],
   },
 
-  // ── Step 5: Configure the Vagrantfile ────────────────────────────────────
-
-  {
-    type: 'note',
-    variant: 'info',
-    content: 'The three settings below — synced folders, port forwarding, and resource allocation — are the core of the "clean Mac host" philosophy. Your source code stays on the Mac (version-controlled, editable in any IDE); all runtimes and services live inside the VM.',
-  },
-
-  {
-    type: 'commands',
-    section: 'config',
-    sectionTitle: 'Configure the Vagrantfile',
-    items: [
-      {
-        id: 401,
-        commandTitle: 'Sync your project folder into the VM',
-        command: 'config.vm.synced_folder ".", "/var/www/project"',
-        searchTerms: 'vagrant synced_folder shared folder code mac linux vm sync edit',
-        description: 'Adds a synced folder declaration to the Vagrantfile. The <code>.</code> refers to the folder where the Vagrantfile lives (your Mac project root). <code>/var/www/project</code> is where it appears inside the VM. Edit files in VS Code on your Mac — they are instantly available inside the Linux VM without any copying.',
-        parts: [
-          { text: '"."', explanation: "the host path — relative to the Vagrantfile, so '.' means the project root on your Mac" },
-          { text: '"/var/www/project"', explanation: 'the guest path — where the folder is mounted inside the Ubuntu VM' },
-          { text: 'config.vm.synced_folder', explanation: "Vagrant's built-in sync mechanism — uses NFS, SMB, or rsync depending on the provider; Parallels uses Parallels Tools (HGFS)" },
-        ],
-        example: "# In your Vagrantfile:\nVagrant.configure('2') do |config|\n  config.vm.box = 'bento/ubuntu-22.04-arm64'\n  config.vm.synced_folder '.', '/var/www/project'\nend\n\n# Inside the VM after vagrant reload:\n$ ls /var/www/project\npackage.json  src/  node_modules/",
-        why: "This is the core of the 'clean Mac host' philosophy — your source code lives on the Mac (backed up by Time Machine, editable in any IDE), but Node.js, npm, and all runtimes are installed only inside the throwaway VM.",
-      },
-      {
-        id: 402,
-        commandTitle: 'Forward guest ports to the Mac',
-        command: 'config.vm.network "forwarded_port", guest: 3000, host: 3000\nconfig.vm.network "forwarded_port", guest: 5432, host: 5432',
-        searchTerms: 'vagrant forwarded_port port forward network guest host 3000 5432 node postgres',
-        description: 'Maps ports from inside the VM to your Mac\'s localhost. Your Express app listening on port 3000 inside the VM becomes reachable at <code>http://localhost:3000</code> on your Mac. Same for PostgreSQL on 5432 — connect with any GUI like TablePlus without changing the host.',
-        parts: [
-          { text: 'guest: 3000, host: 3000', explanation: "traffic arriving at localhost:3000 on your Mac is tunnelled to port 3000 inside the VM — where your Node.js/Express app listens" },
-          { text: 'guest: 5432, host: 5432', explanation: "maps the PostgreSQL default port — lets you connect from Mac-side tools like psql, TablePlus, or DataGrip directly to the VM's Postgres" },
-        ],
-        example: "# After vagrant reload:\n# On your Mac:\n$ curl http://localhost:3000/api/health\n{\"status\":\"ok\"}\n\n$ psql -h localhost -U appuser -d appdb\npsql (16.3)\nType 'help' for help.\nappdb=#",
-        why: "Port forwarding means your Mac browser and database tools work against the VM exactly as they would against a remote server — no special network config, no VPN, no IP address to remember.",
-      },
-      {
-        id: 403,
-        commandTitle: 'Allocate RAM and CPU cores to the VM',
-        command: 'config.vm.provider "parallels" do |prl|\n  prl.memory = 8192\n  prl.cpus = 4\nend',
-        searchTerms: 'vagrant parallels provider memory ram cpu cores performance config',
-        description: 'Tells the Parallels provider how many resources to give the VM. With 32 GB of unified memory on an M1, allocating 8 GB to the VM leaves the Mac comfortable while giving the VM enough headroom to run Node.js, PostgreSQL, and any build tooling concurrently.',
-        parts: [
-          { text: 'config.vm.provider "parallels" do |prl|', explanation: 'opens a provider-specific config block — settings here only apply when using the Parallels provider' },
-          { text: 'prl.memory = 8192', explanation: "sets the VM's RAM to 8 GB (in MB) — increase to 16384 for heavier workloads like running tests in parallel" },
-          { text: 'prl.cpus = 4', explanation: "gives the VM 4 CPU cores — the M1's performance cores are fast enough that 4 vCPUs handle most dev workloads well" },
-        ],
-        example: "# Full provider block in context:\nconfig.vm.provider 'parallels' do |prl|\n  prl.memory = 8192\n  prl.cpus   = 4\n  prl.name   = 'dev-env'  # shown in Parallels Desktop UI\nend",
-        why: "Vagrant defaults are conservative (1 GB RAM, 1 CPU). For running a Node.js app, PostgreSQL, and npm install simultaneously you need real resources. Apple Silicon's memory architecture means sharing 8 GB with the VM has almost no impact on Mac-side responsiveness.",
-      },
-      {
-        id: 404,
-        commandTitle: 'Provision Node.js and PostgreSQL automatically',
-        command: 'config.vm.provision "shell", inline: <<-SHELL\n  curl -fsSL https://deb.nodesource.com/setup_18.x | bash -\n  apt-get install -y nodejs postgresql postgresql-contrib\n  sudo -u postgres psql -c "CREATE USER appuser WITH PASSWORD \'secret\';"\n  sudo -u postgres psql -c "CREATE DATABASE appdb OWNER appuser;"\nSHELL',
-        searchTerms: 'vagrant provision shell nodejs postgresql apt-get inline script setup',
-        description: 'Adds an inline shell provisioner that runs once on first <code>vagrant up</code>. It installs Node.js 18 LTS via the NodeSource repo and PostgreSQL, then creates the application database user and database — so the VM is fully ready with no manual steps.',
-        parts: [
-          { text: 'config.vm.provision "shell"', explanation: "runs the given shell script as root inside the VM — only executes on the first 'vagrant up', or when you run 'vagrant provision' explicitly" },
-          { text: 'curl … | bash -', explanation: 'adds the NodeSource APT repository for Node.js 18 LTS — same pattern as on a real Ubuntu server' },
-          { text: 'apt-get install -y nodejs postgresql', explanation: 'installs both runtimes in one pass — no interactive prompts (-y confirms everything)' },
-          { text: 'sudo -u postgres psql -c', explanation: "runs SQL as the postgres superuser to create the app's database role and database" },
-        ],
-        example: "==> default: Running provisioner: shell...\n==> default: Installing Node.js 18...\n==> default: Setting up postgresql...\n==> default: CREATE ROLE\n==> default: CREATE DATABASE\n\n# Inside the VM after provisioning:\n$ node --version\nv18.20.4\n$ psql -U appuser -d appdb -c 'SELECT NOW();'\n           now\n------------------------\n 2024-11-15 10:30:00+00",
-        why: "Provisioning makes the VM self-documenting and reproducible. A new team member runs 'vagrant up' and gets an identical environment in minutes — no README steps, no 'works on my machine' problems, no leftover global packages on the host.",
-      },
-    ],
-  },
-
   // ── Step 6 & 7: Two-VM Architecture ──────────────────────────────────────
-
   {
     type: 'prose',
     title: 'Two-VM architecture: app-web + app-db',
@@ -281,57 +208,56 @@ window.pageBlocks = [
         commandTitle: 'Install Node.js and Git',
         command: 'curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash - && sudo apt-get install -y nodejs git',
         searchTerms: 'nodejs node npm git install apt nodesource web server ubuntu',
-        description: 'Adds the NodeSource repository for Node.js 18 LTS, then installs the <code>nodejs</code> package (which includes <code>npm</code>) and <code>git</code> for cloning the project repository.',
+        description: 'Adds the NodeSource repository for Node.js 18 LTS, then installs the <code>nodejs</code> package (which includes <code>npm</code>) and <code>git</code> for cloning the project repository. The <code>npx</code> runner (bundled with npm) will be used to serve the static site without installing a global package.',
         parts: [
           { text: 'curl -fsSL … | sudo bash -', explanation: 'downloads and executes the NodeSource setup script, which registers the Node.js 18 apt repo — the version in Ubuntu\'s default repos is too old' },
           { text: 'sudo apt-get install -y nodejs', explanation: 'installs Node.js and npm from the newly added NodeSource repo' },
-          { text: 'git', explanation: 'version control tool — used to clone the project repository into the VM' },
+          { text: 'git', explanation: 'version control tool — used to clone the js4b project repository from GitHub into the VM' },
         ],
-        example: "Fetching Node.js 18 LTS...\nSetting up nodejs (18.20.4-1nodesource1) ...\n$ node --version\nv18.20.4\n$ npm --version\n10.7.0",
-        why: "Node.js 18 LTS is the current long-term support release. Installing via NodeSource guarantees you get the upstream version with full ARM64 support, not the outdated package in Ubuntu's default repos.",
+        example: "Fetching Node.js 18 LTS...\nSetting up nodejs (18.20.4-1nodesource1) ...\n$ node --version\nv18.20.4\n$ npm --version\n10.7.0\n$ git --version\ngit version 2.43.0",
+        why: "app-web needs Node.js to serve the static site (via npx http-server) and Git to clone the js4b repo. <strong>Skip the Node.js install</strong> if you already provisioned it via ID 404 — but you still need Git.",
       },
       {
         id: 503,
-        commandTitle: 'Clone the project repository',
-        command: 'git clone https://github.com/your-org/dev-env /var/www/project',
-        searchTerms: 'git clone github project repo clone var www',
-        description: 'Clones the application repository from GitHub directly into <code>/var/www/project</code> — the same path the Vagrantfile\'s synced folder maps to. If you\'re using the synced folder approach, this step is skipped; cloning is the alternative for CI or environments without a host mount.',
+        commandTitle: 'Clone the js4b project from GitHub',
+        command: 'git clone https://github.com/BaiGanio/js4b.git /var/www/project',
+        searchTerms: 'git clone github js4b project repo bai ganio static html css javascript',
+        description: 'Clones the <a href="https://github.com/BaiGanio/js4b" target="_blank">js4b</a> repository — a static HTML/CSS/JS tutorial project — into <code>/var/www/project</code>. The project has no backend dependencies: it\'s pure frontend (Bootstrap-styled pages, API fetch examples, CSS/JS/fonts). This is the standalone app-web demo — static, self-contained, no database required.',
         parts: [
           { text: 'git clone', explanation: 'creates a full local copy of the remote repository including its full history' },
-          { text: 'https://github.com/your-org/dev-env', explanation: 'the remote repository URL — replace with your actual project repo' },
-          { text: '/var/www/project', explanation: 'destination path inside the VM — matches the synced_folder guest path so tools find files in the same location either way' },
+          { text: 'https://github.com/BaiGanio/js4b.git', explanation: 'the js4b project — JavaScript for beginners tutorial with static HTML pages, Bootstrap styling, and free API demos (Rick & Morty, Final Space)' },
+          { text: '/var/www/project', explanation: 'destination path inside the VM — matches the synced_folder guest path so files are available at the same location either way' },
         ],
-        example: "Cloning into '/var/www/project'...\nremote: Counting objects: 142, done.\nReceiving objects: 100% (142/142), done.\n$ ls /var/www/project\npackage.json  src/  README.md",
-        why: "Keeping the clone target consistent with the synced folder path means the app config, scripts, and systemd service file all reference the same location regardless of how the code got there.",
+        example: "Cloning into '/var/www/project'...\nremote: Counting objects: 42, done.\nReceiving objects: 100% (42/42), 161.00 KiB, done.\n\n$ ls /var/www/project\ncss/  fonts/  index.html  wtf.html  ...\n\n$ head -5 /var/www/project/index.html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>",
+        why: "js4b is the perfect standalone demo for app-web — it's a real project with actual content (not a synthetic hello-world), requires zero backend, and proves the entire web-serving chain: Git clone → static files → HTTP server → Vagrant port-forward → Mac browser. The database integration comes later, in the complete Vagrantfile.",
       },
       {
         id: 504,
-        commandTitle: 'Install app dependencies and create systemd service',
-        command: 'cd /var/www/project && npm install && sudo cp app-web.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable app-web && sudo systemctl start app-web',
-        searchTerms: 'npm install systemctl enable start node service systemd daemon app-web',
-        description: 'Installs the project\'s npm dependencies, registers the Node.js app as a systemd service so it starts on boot, reloads the daemon to pick up the new unit file, then enables and starts the service immediately.',
+        commandTitle: 'Serve the static site with npx http-server',
+        command: 'cd /var/www/project && npx --yes http-server . -p 3000 &',
+        searchTerms: 'npx http-server static serve port 3000 foreground background js4b',
+        description: 'Uses <code>npx</code> (bundled with npm) to run <code>http-server</code> on-demand — no global install, no <code>package.json</code> needed. The <code>--yes</code> flag auto-approves the one-time download. Serves the js4b static files from the current directory on port 3000, running in the background via <code>&</code>. The js4b project has no backend dependencies, so nothing to install.',
         parts: [
-          { text: 'npm install', explanation: 'reads package.json and downloads all declared dependencies into node_modules/' },
-          { text: 'sudo cp app-web.service /etc/systemd/system/', explanation: 'places the systemd unit file where systemd can find it — the file lives in the repo so it\'s version-controlled' },
-          { text: 'sudo systemctl daemon-reload', explanation: 'tells systemd to re-scan unit files after adding or modifying one — required before enable/start will recognise the new service' },
-          { text: 'sudo systemctl enable app-web', explanation: 'creates a symlink so systemd starts the Node.js app automatically on every boot' },
-          { text: 'sudo systemctl start app-web', explanation: 'starts the service immediately without requiring a reboot' },
+          { text: 'npx', explanation: 'npm package runner — downloads and executes a package without permanently installing it' },
+          { text: '--yes', explanation: 'auto-approves the "install http-server?" prompt — required for non-interactive use in scripts or background tasks' },
+          { text: 'http-server . -p 3000', explanation: 'starts a lightweight HTTP server serving the current directory on port 3000 — serves index.html by default' },
+          { text: '&', explanation: 'sends the process to the background so you can keep using the terminal; use fg to bring it back, Ctrl+C to stop' },
         ],
-        example: "added 97 packages in 4.2s\nCreated symlink /etc/systemd/system/multi-user.target.wants/app-web.service\n\n$ sudo systemctl status app-web\n● app-web.service - Node.js Web Application\n   Active: active (running) since ...",
-        why: "Running the app as a systemd service gives you automatic restarts on crash, boot-time startup, and standard log integration via journald — without a third-party process manager like pm2.",
+        example: "npx: installed 48 in 2.3s\nStarting up http-server, serving ./\nAvailable on:\n  http://127.0.0.1:3000\n  http://192.168.56.10:3000\nHit CTRL-C to stop the server\n\n# The js4b site is now live on port 3000",
+        why: "npx http-server is the zero-install approach — no package.json, no node_modules, no global package. It downloads http-server on first run (cached for subsequent runs) and serves the static site immediately. This keeps the VM clean while proving the full chain: clone → serve → port-forward → browser.",
       },
       {
         id: 505,
-        commandTitle: 'Verify the app is reachable from your Mac',
-        command: 'curl http://localhost:3000/api/health',
-        searchTerms: 'curl localhost 3000 test verify node express api health check port forward',
-        description: 'Runs this command <strong>on your Mac</strong> (not inside the VM). Thanks to port forwarding in the Vagrantfile, traffic to <code>localhost:3000</code> on your Mac is transparently tunnelled to port 3000 inside <code>app-web</code>.',
+        commandTitle: 'Verify the js4b site from your Mac',
+        command: 'curl -s http://localhost:3000/ | head -10',
+        searchTerms: 'curl localhost 3000 test verify js4b static html site port forward browser',
+        description: 'Runs this command <strong>on your Mac</strong> (not inside the VM). It fetches the js4b homepage through Vagrant\'s port-forward and prints the first 10 lines of HTML — proof that the static site is being served from inside <code>app-web</code>. Or just open <code>http://localhost:3000</code> in your Mac browser to see the full site.',
         parts: [
-          { text: 'curl', explanation: 'command-line HTTP client — available by default on macOS' },
-          { text: 'http://localhost:3000/api/health', explanation: "hits the health-check endpoint on your Mac's loopback interface — Vagrant's port forward delivers it to the VM's Express server" },
+          { text: 'curl -s http://localhost:3000/', explanation: 'fetches the js4b homepage silently (-s suppresses the progress meter) through Vagrant\'s port-forward from app-web:3000' },
+          { text: '| head -10', explanation: 'shows the first 10 lines of the HTML response — enough to confirm the site is being served, without flooding the terminal' },
         ],
-        example: "# Run on your Mac:\n$ curl http://localhost:3000/api/health\n{\"status\":\"ok\",\"db\":\"connected\"}\n\n# Or open in your Mac browser:\n# http://localhost:3000",
-        why: "This is the payoff of port forwarding — your Mac browser and API clients talk to the Linux VM as if it were running locally. No IP address, no VPN, no network config to remember.",
+        example: "# Run on your Mac:\n$ curl -s http://localhost:3000/ | head -10\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" ...>\n  <title>js4b — JavaScript for beginners</title>\n  ...\n\n# Or open in your Mac browser:\n# http://localhost:3000  → the full js4b site, with Bootstrap styling and API demos",
+        why: "This proves the complete standalone chain: Git cloned a real project into the VM, npx served it without installing anything, and Vagrant port-forwarding delivered it to your Mac. No database, no backend, no other VM required. The js4b site even has live API demos (Rick & Morty, Final Space) that work through this same port-forward. The database integration is deferred to the final complete Vagrantfile.",
       },
     ],
   },
@@ -368,7 +294,7 @@ window.pageBlocks = [
           { text: 'postgresql-contrib', explanation: 'additional extensions and utilities that ship separately from the core — required for uuid-ossp and other commonly used modules' },
         ],
         example: "Setting up postgresql (16+246) ...\nCreating new PostgreSQL cluster 16/main ...\n\n$ psql --version\npsql (PostgreSQL) 16.3",
-        why: "Unlike CentOS/RHEL, Ubuntu's apt repos ship a reasonably current PostgreSQL version with ARM64 support out of the box — no third-party repo needed.",
+        why: "Unlike CentOS/RHEL, Ubuntu's apt repos ship a reasonably current PostgreSQL version with ARM64 support out of the box — no third-party repo needed. <strong>Skip this</strong> if you already provisioned PostgreSQL via the Vagrantfile in ID 404.",
       },
       {
         id: 603,
@@ -383,7 +309,7 @@ window.pageBlocks = [
           { text: 'CREATE DATABASE appdb OWNER appuser', explanation: 'creates the application database and gives full ownership to appuser — scopes all permissions to this database only' },
         ],
         example: "CREATE ROLE\nCREATE DATABASE\n\n# Verify:\n$ sudo -u postgres psql -c '\\l'\n   Name    |  Owner\n-----------+----------\n appdb     | appuser",
-        why: "Applications should never connect as the postgres superuser. A dedicated role with only the permissions it needs limits the blast radius of a compromised connection string — standard security practice.",
+        why: "Applications should never connect as the postgres superuser. A dedicated role with only the permissions it needs limits the blast radius of a compromised connection string — standard security practice. <strong>Skip this</strong> if the provisioner in ID 404 already created the <code>appuser</code> role and <code>appdb</code> database.",
       },
       {
         id: 604,
@@ -401,18 +327,46 @@ window.pageBlocks = [
       },
       {
         id: 605,
-        commandTitle: 'Run the database setup script',
-        command: 'psql -U appuser -d appdb -f db_setup.sql',
-        searchTerms: 'psql run script sql file database setup schema seed postgres',
-        description: 'Connects to <code>appdb</code> as <code>appuser</code> and executes the SQL setup script, creating the schema, tables, indexes, and any seed data the application needs to start.',
+        commandTitle: 'Seed the planets database — populate real data',
+        command: '# The planets.sql file is in your project repo (lib/files/).\n# Copy it to app-db first (from your Mac):\n#   vagrant upload lib/files/planets.sql /tmp/planets.sql app-db\n# Then run:\npsql -U appuser -d appdb -f /tmp/planets.sql',
+        searchTerms: 'psql seed database planets sql insert import table postgres data upload',
+        description: 'Copies <code>planets.sql</code> from the host to the app-db VM, then executes it against <code>appdb</code>. The standalone app-db VM doesn\'t have a synced folder, so the file must be transferred first. The script creates the <code>Planet</code> table and inserts all 8 solar system planets — turning an empty database into one with visible, queryable data.',
         parts: [
-          { text: 'psql', explanation: 'PostgreSQL interactive terminal — used here in batch mode' },
-          { text: '-U appuser', explanation: 'connect as the application role — tests the same credentials the Node.js app will use' },
-          { text: '-d appdb', explanation: 'the target database to connect to' },
-          { text: '-f db_setup.sql', explanation: 'reads and executes SQL from this file in one pass — the standard way to run repeatable schema migrations' },
+          { text: 'vagrant upload ... app-db', explanation: 'copies a file from the Mac host to the named VM — the Vagrant equivalent of scp, no IP address needed' },
+          { text: 'psql -U appuser', explanation: 'connect as the application role — same credentials the final Node.js API will use' },
+          { text: '-d appdb', explanation: 'the target database created two steps ago' },
+          { text: '-f /tmp/planets.sql', explanation: 'reads and executes the SQL file in batch mode — creates the Planet table and inserts 8 rows' },
         ],
-        example: "CREATE TABLE\nCREATE INDEX\nINSERT 0 5\n\n# Verify:\n$ psql -U appuser -d appdb -c '\\dt'\n        List of relations\n Schema |   Name   | Type\n--------+----------+-------\n public | users    | table\n public | sessions | table",
-        why: "Using -f to feed a file is the standard way to execute a batch of SQL statements repeatably — the same script can be re-run in CI or against a fresh database with identical results.",
+        example: "DROP TABLE\nCREATE TABLE\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\n\n# 8 rows inserted — the database now has real data to query and display",
+        why: "This is the data layer of the final demo. The planets.sql file ships with the project and runs identically every time — destroy the VM, rebuild it, re-run this command, and the data is back. The same file feeds the SPA at the end of the module.",
+      },
+      {
+        id: 606,
+        commandTitle: 'View the planets with a formatted query',
+        command: 'psql -U appuser -d appdb -c "SELECT PlanetID, Name, MassEarths AS \\"Mass (M⊕)\\", RadiusKm AS \\"Radius (km)\\", DistanceAU AS \\"Distance (AU)\\", CASE WHEN HasRings THEN \'🪐 Yes\' ELSE \'No\' END AS Rings FROM Planet ORDER BY PlanetID;"',
+        searchTerms: 'psql select planets formatted query view table data display output',
+        description: 'Runs a formatted <code>SELECT</code> query directly against the <code>Planet</code> table, displaying all 8 planets with their mass, radius, distance, and ring status in a clean columnar table. This gives you immediate visibility into the data without needing a GUI or an application — pure <code>psql</code>.',
+        parts: [
+          { text: 'psql -c "SELECT ..."', explanation: 'executes a single query and prints the result table — no interactive shell needed' },
+          { text: 'CASE WHEN HasRings THEN ...', explanation: 'converts the boolean HasRings column into a human-readable "🪐 Yes" / "No" — PostgreSQL evaluates the condition per row' },
+          { text: 'AS \\"Mass (M⊕)\\"', explanation: 'aliases the column name with a unit label — the backslash-escaped quotes let you use spaces and symbols in column headers' },
+        ],
+        example: " planetid |  name   | Mass (M⊕) | Radius (km) | Distance (AU) |  Rings\n----------+---------+-----------+-------------+---------------+--------\n        1 | Mercury |    0.0550 |     2439.70 |        0.3900 | No\n        2 | Venus   |    0.8150 |     6051.80 |        0.7200 | No\n        3 | Earth   |    1.0000 |     6371.00 |        1.0000 | No\n        4 | Mars    |    0.1070 |     3389.50 |        1.5200 | No\n        5 | Jupiter |  317.8000 |    69911.00 |        5.2000 | 🪐 Yes\n        6 | Saturn  |   95.1600 |    58232.00 |        9.5800 | 🪐 Yes\n        7 | Uranus  |   14.5400 |    25362.00 |       19.2200 | 🪐 Yes\n        8 | Neptune |   17.1500 |    24622.00 |       30.0500 | 🪐 Yes\n(8 rows)",
+        why: "Data visibility is the missing piece when you only have a database server and no frontend. A formatted psql query gives you instant, readable proof that the data is there, correct, and ready to be consumed by the API. You can also pipe this to less, grep, or CSV for further inspection.",
+      },
+      {
+        id: 607,
+        commandTitle: 'Connect a GUI database tool (optional)',
+        command: '# On your Mac — connection details:\n# Host: localhost  Port: 5432\n# User: appuser  Password: secret  Database: appdb',
+        searchTerms: 'tableplus pgadmin dbeaver gui database client connect localhost port forward mac',
+        description: 'Shows the connection parameters for any Mac database GUI. Because the Vagrantfile forwards port 5432 from <code>app-db</code> to your Mac\'s <code>localhost:5432</code>, tools like <strong>TablePlus</strong>, <strong>pgAdmin</strong>, or <strong>DBeaver</strong> can connect directly. Browse tables, run ad-hoc queries, and visually inspect the Planet table — all from your Mac, with zero SSH or network config.',
+        parts: [
+          { text: 'Host: localhost', explanation: 'Vagrant port-forwarding makes the remote PostgreSQL appear local — no VM IP address needed' },
+          { text: 'Port: 5432', explanation: 'the standard PostgreSQL port, forwarded from the app-db VM to your Mac' },
+          { text: 'User: appuser / Password: secret', explanation: 'the credentials created in step 603 — the same ones the Node.js API uses' },
+        ],
+        example: "# In TablePlus on your Mac:\n# 1. Create new connection → PostgreSQL\n# 2. Host: localhost  Port: 5432\n# 3. User: appuser  Password: secret\n# 4. Database: appdb\n# 5. Connect → browse Planet table with 8 rows\n\n# Alternative — use psql from your Mac (if installed):\n$ psql -h localhost -U appuser -d appdb\nappdb=> SELECT * FROM Planet;\nappdb=> \\q",
+        why: "A GUI database tool closes the 'I have a database but can't see my data' gap. With port forwarding, any Mac-native database client works as if PostgreSQL were installed locally. This is especially useful during development — you can visually verify schema changes, inspect query results, and debug data issues without SSH-ing into the VM.",
       },
     ],
   },
@@ -493,20 +447,116 @@ window.pageBlocks = [
     items: [
       {
         id: 801,
-        commandTitle: 'Full two-VM Vagrantfile: app-web + app-db on M1',
+        commandTitle: 'Final Vagrantfile: the complete planets stack (app-web + app-db)',
         command: 'cat Vagrantfile',
-        searchTerms: 'vagrantfile complete full example node postgres m1 arm64 parallels synced port provision two vm multi machine app-web app-db',
-        description: 'The complete Vagrantfile that ties together everything from this module. It defines <strong>two named machines</strong> — <code>app-web</code> (Node.js) and <code>app-db</code> (PostgreSQL) — each with their own hostname, resources, port forwarding, and inline provisioner. One <code>vagrant up --provider parallels</code> builds the entire stack from scratch.',
+        searchTerms: 'vagrantfile complete full example node postgres m1 arm64 parallels synced port provision two vm multi machine app-web app-db planets',
+        description: 'The complete Vagrantfile that encodes the entire module. It defines two named machines — <code>app-web</code> (Node.js + Express API + SPA) and <code>app-db</code> (PostgreSQL + seeded planets data). One <code>vagrant up --provider parallels</code> provisions both VMs from scratch. After boot, a single <code>node server.js</code> on app-web and the full stack is live. This is where the standalone demos converge into a working end-to-end application.',
         parts: [
-          { text: 'config.vm.define "app-web"', explanation: "declares a named machine — you can target it individually with 'vagrant ssh app-web' or 'vagrant reload app-web'" },
-          { text: 'config.vm.define "app-db"', explanation: "declares the second named machine — both spin up together on 'vagrant up' unless you specify a name" },
+          { text: 'config.vm.define "app-web"', explanation: "declares a named machine — provisions Node.js, creates the Express API with pg pool, and writes the SPA frontend" },
+          { text: 'config.vm.define "app-db"', explanation: "declares the second named machine — provisions PostgreSQL, creates the app role and database, seeds the Planet table with 8 rows" },
           { text: 'config.vm.box = "bento/ubuntu-22.04-arm64"', explanation: 'the ARM64 base image — mandatory for native performance on M1/M2, shared by both VMs' },
-          { text: 'web.vm.network "private_network"', explanation: 'assigns a static private IP to each VM so they can talk to each other — app-web connects to app-db on this address' },
-          { text: 'prl.memory / prl.cpus', explanation: 'resource allocation per VM — web gets more CPU for Node.js, db gets more RAM for Postgres shared_buffers' },
-          { text: 'config.vm.provision "shell"', explanation: 'each VM gets its own provisioner block — app-web installs Node.js, app-db installs PostgreSQL and creates the database' },
+          { text: 'web.vm.network "private_network"', explanation: 'assigns static private IPs — app-web (192.168.56.10) talks to app-db (192.168.56.20) over this isolated network' },
+          { text: 'prl.memory / prl.cpus', explanation: 'resource allocation per VM — 4 GB RAM, 2 CPUs each, tuned for ARM64 macOS hosts' },
+          { text: 'config.vm.provision "shell"', explanation: 'each VM gets a self-contained provisioner — app-web installs Node.js + writes the API, app-db installs PostgreSQL + seeds the planets' },
         ],
-        example: "Vagrant.configure('2') do |config|\n\n  config.vm.box = 'bento/ubuntu-22.04-arm64'\n\n  # ── app-web: Node.js application server ──\n  config.vm.define 'app-web' do |web|\n    web.vm.hostname = 'app-web'\n\n    web.vm.provider 'parallels' do |prl|\n      prl.name   = 'app-web'\n      prl.memory = 4096\n      prl.cpus   = 2\n    end\n\n    web.vm.network 'private_network', ip: '192.168.56.10'\n    web.vm.network 'forwarded_port',  guest: 3000, host: 3000\n    web.vm.synced_folder '.', '/var/www/project'\n\n    web.vm.provision 'shell', inline: <<-SHELL\n      hostnamectl set-hostname app-web\n      curl -fsSL https://deb.nodesource.com/setup_18.x | bash -\n      apt-get install -y nodejs git\n      cd /var/www/project && npm install\n      cp app-web.service /etc/systemd/system/\n      systemctl daemon-reload\n      systemctl enable app-web\n      systemctl start app-web\n    SHELL\n  end\n\n  # ── app-db: PostgreSQL database server ──\n  config.vm.define 'app-db' do |db|\n    db.vm.hostname = 'app-db'\n\n    db.vm.provider 'parallels' do |prl|\n      prl.name   = 'app-db'\n      prl.memory = 4096\n      prl.cpus   = 2\n    end\n\n    db.vm.network 'private_network', ip: '192.168.56.20'\n    db.vm.network 'forwarded_port',  guest: 5432, host: 5432\n\n    db.vm.provision 'shell', inline: <<-SHELL\n      hostnamectl set-hostname app-db\n      apt-get update\n      apt-get install -y postgresql postgresql-contrib\n      sudo -u postgres psql -c \"CREATE USER appuser WITH PASSWORD 'secret';\"\n      sudo -u postgres psql -c \"CREATE DATABASE appdb OWNER appuser;\"\n      echo 'host  appdb  appuser  0.0.0.0/0  md5' >> /etc/postgresql/16/main/pg_hba.conf\n      systemctl reload postgresql\n    SHELL\n  end\n\nend",
-        why: "This Vagrantfile is the single source of truth for the entire development environment. Commit it to your repo and any developer — on any Mac with Vagrant + Parallels — gets an identical two-VM stack with one command. The Mac host stays completely clean: no Node versions, no global npm packages, no Postgres installation, no port conflicts with other projects.",
+        example: "Vagrant.configure('2') do |config|\n\n  config.vm.box = 'bento/ubuntu-22.04-arm64'\n\n  # ── app-web: Node.js API + planets SPA ──\n  config.vm.define 'app-web' do |web|\n    web.vm.hostname = 'app-web'\n\n    web.vm.provider 'parallels' do |prl|\n      prl.name   = 'app-web'\n      prl.memory = 4096\n      prl.cpus   = 2\n    end\n\n    web.vm.network 'private_network', ip: '192.168.56.10'\n    web.vm.network 'forwarded_port',  guest: 3000, host: 3000\n    web.vm.synced_folder '.', '/var/www/project'\n\n    web.vm.provision 'shell', inline: <<-SHELL\n      hostnamectl set-hostname app-web\n      curl -fsSL https://deb.nodesource.com/setup_18.x | bash -\n      apt-get install -y nodejs\n      cd /var/www/project && npm init -y && npm install express pg\n      # Server file (API + static SPA) created in the synced folder —\n      # see the Planets Demo section below for the full source.\n    SHELL\n  end\n\n  # ── app-db: PostgreSQL + seeded planets data ──\n  config.vm.define 'app-db' do |db|\n    db.vm.hostname = 'app-db'\n\n    db.vm.provider 'parallels' do |prl|\n      prl.name   = 'app-db'\n      prl.memory = 4096\n      prl.cpus   = 2\n    end\n\n    db.vm.network 'private_network', ip: '192.168.56.20'\n    db.vm.network 'forwarded_port',  guest: 5432, host: 5432\n    db.vm.synced_folder '.', '/var/www/project'\n\n    db.vm.provision 'shell', inline: <<-SHELL\n      hostnamectl set-hostname app-db\n      apt-get update\n      apt-get install -y postgresql postgresql-contrib\n      sudo -u postgres psql -c \"CREATE USER appuser WITH PASSWORD 'secret';\"\n      sudo -u postgres psql -c \"CREATE DATABASE appdb OWNER appuser;\"\n      echo 'host  appdb  appuser  0.0.0.0/0  md5' >> /etc/postgresql/16/main/pg_hba.conf\n      systemctl reload postgresql\n      # Seed planets data (idempotent — safe to re-run on reprovision)\n      sudo -u postgres psql -d appdb -f /var/www/project/lib/files/planets.sql\n    SHELL\n  end\n\nend\n\n# After vagrant up completes, SSH into app-web and start the server:\n# $ vagrant ssh app-web\n# $ cd /var/www/project && node server.js &\n# $ curl http://localhost:3000/api/planets   # from your Mac",
+        why: "This Vagrantfile is where the standalone demos converge. app-web started as a 15-line Hello World Express app — now it provisions a full API server with pg connection pooling. app-db started as an empty PostgreSQL instance — now it seeds 8 planets on first boot. One 'vagrant up --provider parallels' and both VMs are ready. Create the server.js and index.html (see the Planets Demo section below), start the server, and the full stack is live at http://localhost:3000. The Mac host stays completely clean throughout — no Node versions, no global npm packages, no Postgres installation, no port conflicts with other projects.",
+      },
+    ],
+  },
+
+  // ── T-SQL vs PostgreSQL Note ──────────────────────────────────────────────
+
+  {
+    type: 'note',
+    variant: 'info',
+    content: '<strong>T-SQL (SQL Server) vs PostgreSQL.</strong> The <code>planets.sql</code> file bundled with this project was originally written for Microsoft SQL Server — T-SQL syntax with <code>BIT</code>, <code>GO</code> separators, and <code>master.dbo.sysdatabases</code> checks. Five straightforward changes make it PostgreSQL-compatible:<br><br><table style="font-size:0.9rem;"><tr><th style="padding:4px 12px;text-align:left;">SQL Server (T-SQL)</th><th style="padding:4px 12px;text-align:left;">PostgreSQL</th><th style="padding:4px 12px;text-align:left;">Why</th></tr><tr><td style="padding:4px 12px;"><code>BIT</code></td><td style="padding:4px 12px;"><code>BOOLEAN</code></td><td style="padding:4px 12px;">PostgreSQL has a native boolean type; <code>TRUE</code>/<code>FALSE</code> instead of 1/0</td></tr><tr><td style="padding:4px 12px;"><code>GO</code></td><td style="padding:4px 12px;">(removed)</td><td style="padding:4px 12px;"><code>GO</code> is a batch separator — PostgreSQL does not need it</td></tr><tr><td style="padding:4px 12px;"><code>USE Planets</code></td><td style="padding:4px 12px;">connect via <code>-d</code></td><td style="padding:4px 12px;">Connect at session level: <code>psql -d planets</code></td></tr><tr><td style="padding:4px 12px;"><code>IF OBJECT_ID(\'…\')</code></td><td style="padding:4px 12px;"><code>DROP TABLE IF EXISTS</code></td><td style="padding:4px 12px;">PostgreSQL supports IF EXISTS in DDL — cleaner syntax</td></tr><tr><td style="padding:4px 12px;"><code>master.dbo.sysdatabases</code></td><td style="padding:4px 12px;">shell-level creation</td><td style="padding:4px 12px;">Database creation is handled by the provisioner instead of T-SQL logic</td></tr></table><br>For this module, PostgreSQL is the pragmatic choice: it installs with one <code>apt-get</code> command and runs natively on ARM64 — no preview limitations, no Microsoft repo configuration. The <code>CREATE TABLE</code> and <code>INSERT</code> statements are otherwise identical across both databases.',
+  },
+
+  // ── Planets Demo: Build the Full Stack ────────────────────────────────────
+
+  {
+    type: 'prose',
+    title: 'Putting it together: Planets SPA demo',
+    content: `
+      <p>
+        The final section wires everything from this module into a working demo: a single-page
+        application that displays the eight planets of the solar system as cards. The data flows
+        PostgreSQL → Node.js API → browser — all running inside the two VMs you just built.
+      </p>
+      <p>
+        <strong>Architecture recap:</strong><br>
+        <code>app-db</code> (192.168.56.20) runs PostgreSQL with the seeded <code>Planet</code> table.<br>
+        <code>app-web</code> (192.168.56.10) runs an Express server that queries PostgreSQL via the
+        <code>pg</code> library and serves the SPA frontend as static files.<br>
+        Your Mac browser hits <code>http://localhost:3000</code> — Vagrant port-forwarding delivers
+        the request to the Node.js server inside <code>app-web</code>.
+      </p>
+      <p>
+        This is the "two applications at the end" you set out to build: a database backend
+        feeding a web frontend, both provisioned from a single Vagrantfile.
+      </p>
+    `,
+  },
+
+  {
+    type: 'commands',
+    section: 'planets',
+    sectionTitle: 'Planets Demo — Seed, API, SPA',
+    items: [
+      {
+        id: 901,
+        commandTitle: 'Seed the planets database from the SQL file',
+        command: 'psql -U appuser -d appdb -h 192.168.56.20 -f /var/www/project/lib/files/planets.sql',
+        searchTerms: 'psql seed database planets sql insert import table postgres',
+        description: 'Connects to PostgreSQL on the <code>app-db</code> VM (private IP <code>192.168.56.20</code>) and executes <code>planets.sql</code> — creating the <code>Planet</code> table and inserting all 8 planets in a single batch.',
+        parts: [
+          { text: 'psql -U appuser', explanation: 'connect as the application role — same credentials the Node.js API will use' },
+          { text: '-d appdb', explanation: 'the target database created during provisioning' },
+          { text: '-h 192.168.56.20', explanation: 'connect across the Vagrant private network — app-web talks to app-db on this static IP' },
+          { text: '-f planets.sql', explanation: 'read and execute SQL from this file in batch mode — the standard way to run repeatable schema migrations' },
+        ],
+        example: "DROP TABLE\nCREATE TABLE\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\nINSERT 0 1\n\n# Verify the data landed:\n$ psql -U appuser -d appdb -h 192.168.56.20 -c 'SELECT PlanetID, Name, HasRings FROM Planet;'\n planetid |  name   | hasrings\n----------+---------+----------\n        1 | Mercury | f\n        2 | Venus   | f\n        3 | Earth   | f\n        4 | Mars    | f\n        5 | Jupiter | t\n        6 | Saturn  | t\n        7 | Uranus  | t\n        8 | Neptune | t\n(8 rows)",
+        why: "Seeding the database with '-f' turns an empty Postgres instance into one with actual data your application can query. This is a repeatable, zero-manual-steps operation — destroy and rebuild the VM, run this command again, and the data is back.",
+      },
+      {
+        id: 902,
+        commandTitle: 'Install pg + Express and copy the API server',
+        command: 'cd /var/www/project && npm install pg express && cp src/m1/server.js server.js',
+        searchTerms: 'node express pg pool postgres api endpoint planets server.js npm install copy',
+        description: 'Installs the <code>pg</code> (PostgreSQL client) and <code>express</code> packages, then copies the pre-built API server from <code>src/m1/server.js</code> into the project root. The server exposes <code>GET /api/planets</code> with a connection pool to PostgreSQL on <code>app-db</code> and serves the SPA from <code>src/m1/public/</code>. No need to write the file inline — it already exists in the synced project folder.',
+        parts: [
+          { text: 'npm install pg express', explanation: 'pg is the de facto PostgreSQL client for Node.js; express is the HTTP framework — both declared as dependencies' },
+          { text: 'cp src/m1/server.js server.js', explanation: 'copies the pre-built API server from the src/m1/ directory — the synced folder makes project files available inside the VM at /var/www/project/' },
+        ],
+        example: "# After creating server.js:\n$ node server.js &\nPlanets API on :3000\n\n# Test from inside app-web:\n$ curl http://localhost:3000/api/planets\n[{\"planetid\":1,\"name\":\"Mercury\",\"massearths\":\"0.0550\",...},...]",
+        why: "Connection pooling avoids the TCP handshake overhead of opening a new connection for every API call. The pg library handles this automatically — you create one Pool at startup and share it across all requests.",
+      },
+      {
+        id: 903,
+        commandTitle: 'Copy the planets SPA frontend into place',
+        command: 'mkdir -p public && cp src/m1/public/index.html public/index.html',
+        searchTerms: 'spa single page application html css planet cards frontend grid fetch api copy',
+        description: 'Copies the pre-built planets SPA from <code>src/m1/public/index.html</code> into <code>public/</code>, where the Express server serves it as a static file. The page — a zero-dependency HTML/CSS/JS single-page application — fetches <code>/api/planets</code> on load and renders each planet as a card. No frameworks, no bundler, no inline heredoc needed.',
+        parts: [
+          { text: 'mkdir -p public', explanation: 'creates the public/ directory if it does not exist — Express serves static files from here' },
+          { text: 'cp src/m1/public/index.html public/index.html', explanation: 'copies the SPA from the src/m1/ directory — the synced folder makes all project files available at /var/www/project/' },
+          { text: 'See src/m1/public/index.html', explanation: 'open the file to review the full source — CSS Grid card layout, fetch API call, SVG fallback, lazy-loaded images, all in ~80 lines' },
+        ],
+        example: "# Open your Mac browser:\n# http://localhost:3000\n\n# You should see 8 planet cards in a responsive grid:\n# Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune\n# Each card shows: image, mass, radius, distance, rings badge, discovery info\n\n# Card layout (description):\n# ┌──────────────┐ ┌──────────────┐ ┌──────────────┐\n# │   [planet    │ │   [planet    │ │   [planet    │\n# │    image]    │ │    image]    │ │    image]    │\n# │              │ │              │ │              │\n# │ Jupiter      │ │ Saturn       │ │ Uranus       │\n# │ 317.8 M⊕     │ │ 95.16 M⊕     │ │ 14.54 M⊕     │\n# │ 🪐 Rings     │ │ 🪐 Rings     │ │ 🪐 Rings     │\n# └──────────────┘ └──────────────┘ └──────────────┘",
+        why: "This is a pure platform SPA — no React, no Vue, no build step. The browser's native fetch, CSS Grid, and template literals handle everything. For a demo, this keeps the dependency footprint at zero and makes the architecture immediately obvious: HTML file → fetch API → Postgres. Every moving part is visible in ~80 lines of code.",
+      },
+      {
+        id: 904,
+        commandTitle: 'Run the server and test the full stack',
+        command: 'cd /var/www/project && node server.js',
+        searchTerms: 'node server start run test verify full stack demo',
+        description: 'Starts the Express server in the foreground. Leave this running, then open <code>http://localhost:3000</code> in your Mac browser — Vagrant port-forwarding delivers the request to the Node.js process running inside <code>app-web</code> on port 3000.',
+        parts: [
+          { text: 'node server.js', explanation: 'starts the Node.js process — runs in the foreground so you see logs; for production, use the systemd service from an earlier step' },
+        ],
+        example: "$ node server.js\nPlanets API on :3000\n\n# On your Mac:\n# http://localhost:3000        → SPA with planet cards\n# http://localhost:3000/api/planets → raw JSON\n\n$ curl http://localhost:3000/api/planets | python3 -m json.tool | head -20\n[\n    {\n        \"planetid\": 1,\n        \"name\": \"Mercury\",\n        \"massearths\": \"0.0550\",\n        \"radiuskm\": \"2439.70\",\n        \"distanceau\": \"0.3900\",\n        \"hasrings\": false,\n        \"atmosphere\": \"Oxygen, Sodium, Hydrogen\",\n        \"discoveredby\": null,\n        \"discoveryyear\": null,\n        \"imgurl\": \"https://wallpaperaccess.com/full/1133845.jpg\"\n    },\n    ...\n]",
+        why: "This is the final verification: data flows from PostgreSQL (app-db) through the Node.js API (app-web) to your Mac browser via Vagrant port forwarding. Three machines — two virtual, one physical — working together as one stack. The Vagrantfile you committed to your repo can reproduce this entire environment from scratch on any Mac with Parallels.",
       },
     ],
   },

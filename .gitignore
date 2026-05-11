@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 *.env
+*.deepseek/
 notes/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
