@@ -1,0 +1,132 @@
+Vagrant.configure('2') do |config|
+
+  # ── app-db: PostgreSQL 16 + planets seed ──
+  config.vm.define 'app-db' do |db|
+    db.vm.box      = 'bento/ubuntu-24.04'
+    db.vm.hostname = 'app-db'
+
+    db.vm.provider 'parallels' do |prl|
+      prl.name   = 'app-db'
+      prl.memory = 1024
+      prl.cpus   = 1
+    end
+
+    db.vm.network 'private_network', ip: '192.168.56.20'
+    db.vm.network 'forwarded_port',  guest: 5432, host: 5432
+
+    db.vm.provision 'shell', inline: <<-SHELL
+      set -e
+      apt-get update -q
+      apt-get install -y postgresql postgresql-contrib
+
+      PG_HBA=$(find /etc/postgresql -name pg_hba.conf | head -1)
+      PG_CONF=$(find /etc/postgresql -name postgresql.conf | head -1)
+      sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" "$PG_CONF"
+      echo "host  planets  planets_user  192.168.56.0/24  scram-sha-256" >> "$PG_HBA"
+
+      systemctl restart postgresql
+      sleep 3
+
+      sudo -u postgres psql -c "CREATE USER planets_user WITH PASSWORD 'DevPass123!';"
+      sudo -u postgres psql -c "CREATE DATABASE planets OWNER planets_user;"
+      sudo -u postgres psql -d planets <<'SQL'
+CREATE TABLE planet (
+  planetid      INT PRIMARY KEY,
+  name          VARCHAR(100) NOT NULL,
+  massearths    DECIMAL(10,4),
+  radiuskm      DECIMAL(10,2),
+  distanceau    DECIMAL(10,4),
+  hasrings      BOOLEAN,
+  atmosphere    VARCHAR(255),
+  discoveredby  VARCHAR(100),
+  discoveryyear INT
+);
+INSERT INTO planet VALUES
+  (1,'Mercury',0.055,2439.7,0.39,FALSE,'Oxygen, Sodium, Hydrogen',NULL,NULL),
+  (2,'Venus',0.815,6051.8,0.72,FALSE,'CO2, Nitrogen',NULL,NULL),
+  (3,'Earth',1.000,6371.0,1.00,FALSE,'Nitrogen, Oxygen',NULL,NULL),
+  (4,'Mars',0.107,3389.5,1.52,FALSE,'CO2, Nitrogen, Argon',NULL,NULL),
+  (5,'Jupiter',317.8,69911,5.20,TRUE,'Hydrogen, Helium','Galileo Galilei',1610),
+  (6,'Saturn',95.16,58232,9.58,TRUE,'Hydrogen, Helium','Galileo Galilei',1610),
+  (7,'Uranus',14.54,25362,19.22,TRUE,'Hydrogen, Helium, Methane','William Herschel',1781),
+  (8,'Neptune',17.15,24622,30.05,TRUE,'Hydrogen, Helium, Methane','Urbain Le Verrier',1846);
+GRANT ALL ON TABLE planet TO planets_user;
+SQL
+    SHELL
+  end
+
+  # ── app-web: .NET 10 Minimal API ──
+  config.vm.define 'app-web' do |web|
+    web.vm.box      = 'bento/ubuntu-24.04'
+    web.vm.hostname = 'app-web'
+
+    web.vm.provider 'parallels' do |prl|
+      prl.name   = 'app-web'
+      prl.memory = 1024
+      prl.cpus   = 1
+    end
+
+    web.vm.network 'private_network', ip: '192.168.56.10'
+    web.vm.network 'forwarded_port',  guest: 5000, host: 5000
+
+    web.vm.provision 'shell', inline: <<-SHELL
+      set -e
+      apt-get update -q
+      apt-get install -y dotnet-sdk-10.0
+
+      mkdir -p /opt/planets-api && cd /opt/planets-api
+      dotnet new web -o . --force
+      dotnet add package Npgsql
+
+      cat > Program.cs <<'CSHARP'
+using Npgsql;
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+var connStr = Environment.GetEnvironmentVariable("DB_CONN")
+    ?? "Host=192.168.56.20;Database=planets;Username=planets_user;Password=DevPass123!";
+app.MapGet("/planets", async () => {
+    await using var conn = new NpgsqlConnection(connStr);
+    await conn.OpenAsync();
+    await using var cmd = new NpgsqlCommand(
+        "SELECT planetid, name, massearths, radiuskm, distanceau, hasrings FROM planet ORDER BY planetid",
+        conn);
+    await using var reader = await cmd.ExecuteReaderAsync();
+    var list = new List<object>();
+    while (await reader.ReadAsync())
+        list.Add(new {
+            id         = reader.GetInt32(0),
+            name       = reader.GetString(1),
+            massEarths = reader.IsDBNull(2) ? (decimal?)null : reader.GetDecimal(2),
+            radiusKm   = reader.IsDBNull(3) ? (decimal?)null : reader.GetDecimal(3),
+            distanceAU = reader.IsDBNull(4) ? (decimal?)null : reader.GetDecimal(4),
+            hasRings   = reader.GetBoolean(5)
+        });
+    return Results.Ok(list);
+});
+app.Run("http://0.0.0.0:5000");
+CSHARP
+
+      dotnet publish -c Release -o /opt/planets-api/publish
+
+      cat > /etc/systemd/system/planets-api.service <<'UNIT'
+[Unit]
+Description=Planets Minimal API
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/planets-api/publish
+ExecStart=/usr/bin/dotnet /opt/planets-api/publish/planets-api.dll
+Restart=on-failure
+Environment=ASPNETCORE_ENVIRONMENT=Development
+Environment=ASPNETCORE_URLS=http://+:5000
+Environment=DB_CONN=Host=192.168.56.20;Database=planets;Username=planets_user;Password=DevPass123!
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+      systemctl daemon-reload
+      systemctl enable --now planets-api
+    SHELL
+  end
+
+end
