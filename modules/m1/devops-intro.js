@@ -108,38 +108,48 @@ window.pageBlocks = [
     items: [
       {
         id: 10,
-        commandTitle: 'Define a complete web server in 5 lines',
+        commandTitle: 'Define a complete web server in 20 lines',
         command: 'cat Vagrantfile',
-        searchTerms: 'vagrantfile example simple web server nodejs',
-        description: 'This tiny Vagrantfile defines a complete Ubuntu web server with Node.js — all in version-controlled text. No clicking through installers, no "I ran these commands last month but forgot which ones".',
+        searchTerms: 'vagrantfile example simple web server dotnet minimal api weather',
+        description: 'This Vagrantfile defines a complete Ubuntu web server running a .NET 10 Minimal API — all in version-controlled text. No clicking through installers, no "I ran these commands last month but forgot which ones".',
         parts: [
           { text: 'config.vm.box', explanation: 'the base OS image — Ubuntu 24.04 for ARM64' },
-          { text: 'config.vm.network "forwarded_port"', explanation: 'maps port 3000 from the VM to your Mac — open localhost:3000 in your browser' },
-          { text: 'config.vm.provision "shell"', explanation: 'runs these commands once on first boot — installs Node.js and starts your app' },
+          { text: 'config.vm.network "forwarded_port"', explanation: 'maps port 5000 from the VM to your Mac — open localhost:5000/weather in your browser' },
+          { text: 'config.vm.provision "shell"', explanation: 'runs these commands once on first boot — installs .NET SDK 10, scaffolds a Minimal API project, and starts it' },
         ],
         example: `Vagrant.configure("2") do |config|
   config.vm.box = "bento/ubuntu-24.04-arm64"
-  config.vm.network "forwarded_port", guest: 3000, host: 3000
+  config.vm.network "forwarded_port", guest: 5000, host: 5000
   config.vm.provision "shell", inline: <<-SHELL
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y nodejs
-    npm install -g serve
-    serve -s /var/www -l 3000 &
+    wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb
+    dpkg -i packages-microsoft-prod.deb && apt-get update -q
+    apt-get install -y dotnet-sdk-10.0
+    mkdir /var/www/weather && cd /var/www/weather && dotnet new web -o . --force
+    cat > Program.cs << 'CSHARP'
+var app = WebApplication.Create(args);
+var conditions = new[]{"Sunny","Cloudy","Rainy","Snowy"};
+app.MapGet("/weather", () => new {
+    TemperatureC = Random.Shared.Next(-20, 40),
+    Condition    = conditions[Random.Shared.Next(conditions.Length)]
+});
+app.Run("http://0.0.0.0:5000");
+CSHARP
+    nohup dotnet run --urls http://0.0.0.0:5000 &
   SHELL
 end`,
-        why: 'This file is the single source of truth. Commit it to Git. Any developer on your team gets an identical environment with one command: <code>vagrant up</code>.',
+        why: 'This file is the single source of truth. Commit it to Git. Any developer on your team gets an identical environment with one command: <code>vagrant up</code>. Hit <code>localhost:5000/weather</code> and you get a live JSON response — instant proof the VM is up and the app is running.',
       },
       {
         id: 11,
         commandTitle: 'Spin up the environment from nothing',
         command: 'vagrant up --provider parallels',
         searchTerms: 'vagrant up start vm from scratch infrastructure as code',
-        description: 'One command downloads the OS image, creates the VM, configures networking, installs Node.js, and starts your application. No manual steps, no hidden dependencies, no "works on my machine" surprises.',
+        description: 'One command downloads the OS image, creates the VM, configures networking, installs .NET SDK 10, and starts your Minimal API. No manual steps, no hidden dependencies, no "works on my machine" surprises.',
         parts: [
           { text: 'vagrant up', explanation: 'the main IaC command — brings infrastructure from zero to running' },
           { text: '--provider parallels', explanation: 'chooses which hypervisor to use (Parallels, VMware, or VirtualBox)' },
         ],
-        example: 'Bringing machine \'default\' up with \'parallels\' provider...\n==> default: Box \'bento/ubuntu-24.04-arm64\' could not be found. Installing now...\n==> default: Machine booted and ready!\n==> default: Running provisioner: shell...\n    default: Installing Node.js 20...\n    default: Starting web server on port 3000...',
+        example: 'Bringing machine \'default\' up with \'parallels\' provider...\n==> default: Box \'bento/ubuntu-24.04-arm64\' could not be found. Installing now...\n==> default: Machine booted and ready!\n==> default: Running provisioner: shell...\n    default: Installing .NET SDK 10.0...\n    default: Building WeatherApi Minimal API...\n    default: Listening on http://0.0.0.0:5000 — GET /weather returns live JSON',
         why: 'This is the DevOps payoff — reproducible environments on demand. A new hire runs this and gets the exact same setup as the senior dev with 10 years of experience.',
       },
       {
@@ -225,8 +235,8 @@ end`,
 
       <h4>Development (Your Mac)</h4>
       <ul>
-        <li>Write code on your Mac, synced into <code>app-web</code> VM</li>
-        <li>Test against <code>app-db</code> VM (PostgreSQL) on a private network</li>
+        <li>Write .NET code on your Mac, synced into <code>app-web</code> VM</li>
+        <li>Test against <code>app-db</code> VM (PostgreSQL) on a private network — your Minimal API reads real data</li>
         <li>Commit and push to Git</li>
       </ul>
 
@@ -283,7 +293,7 @@ end`,
       <h4>Technical Skills</h4>
       <ul>
         <li>Writing and reading a declarative <code>Vagrantfile</code> for multiple VMs</li>
-        <li>Managing a web tier (<code>app-web</code> with Node.js) and a database tier (<code>app-db</code> with PostgreSQL)</li>
+        <li>Managing a web tier (<code>app-web</code> with a .NET 10 Minimal API) and a database tier (<code>app-db</code> with PostgreSQL)</li>
         <li>Configuring private networking so VMs can talk to each other</li>
         <li>Using shell provisioners idempotently</li>
         <li>Port forwarding, firewall rules, and systemd services</li>
