@@ -1,26 +1,36 @@
 #!/bin/bash
+# Provisioner runs as root via Vagrant's shell provisioner — no sudo needed.
+set -e
 
-echo "* Add hosts ..."
-echo "192.168.81.100 dob-docker.sulab.local dob-docker" >> /etc/hosts
+echo "* Add host entry ..."
+echo "192.168.56.100 dob-docker" >> /etc/hosts
 
-echo "* Install Prerequisites ..."
-sudo yum update -y
-sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+echo "* Install prerequisites ..."
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get install -y ca-certificates curl gnupg
 
-echo "* Add Docker repository ..."
-sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+echo "* Add Docker's official GPG key ..."
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
 
-echo "* Install Docker ..."
-sudo yum makecache fast
-sudo yum install -y docker-ce
+echo "* Add Docker repository (arm64) ..."
+echo \
+  "deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  > /etc/apt/sources.list.d/docker.list
 
-echo "* Start Docker ..."
-sudo systemctl enable docker
-sudo systemctl start docker
+echo "* Install Docker Engine ..."
+apt-get update -y
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-echo "* Firewall - open port 8080 ..."
-sudo firewall-cmd --add-port=8080/tcp --permanent
-sudo firewall-cmd --reload
+echo "* Enable and start Docker ..."
+systemctl enable docker
+systemctl start docker
+
+# Ubuntu's ufw is inactive on the bento box, so the forwarded port 8080 needs no
+# firewall rule out of the box.
 
 echo "* Add vagrant user to docker group ..."
-sudo usermod -aG docker $USER
+usermod -aG docker vagrant
