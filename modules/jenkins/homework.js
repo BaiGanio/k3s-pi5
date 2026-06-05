@@ -20,7 +20,7 @@ window.commandData = [
       { text: "PostgreSQL", explanation: "temporary container for integration tests, torn down after the test stage" },
     ],
     example: "Acceptance criteria:\n  ✓ vagrant up brings up both VMs, master and slave\n  ✓ Slave auto-registers with the master (SSH launch method)\n  ✓ Pipeline job is pre-configured (via Jenkins CLI or Configuration as Code)\n  ✓ Pipeline: checkout → restore → build → unit test → integration test (PostgreSQL) → Docker build → deploy\n  ✓ Integration tests run against a real PostgreSQL container, then clean up\n  ✓ The app is reachable on http://localhost:8080 (or :3000 for Node.js) after the pipeline succeeds\n  ✓ Re-running the pipeline is idempotent — second run produces the same result\n  ✓ All secrets (DB password, registry credentials) are stored as Jenkins credentials, never hardcoded",
-    why: "This pulls together everything from M5: master/slave topology, SSH credentials, Docker on agents, GitHub integration, Declarative Pipelines, PostgreSQL integration tests, secret management, and Vagrant automation. It's the M5 equivalent of the M4 Ansible homework — a capstone that proves you can build a real CI/CD pipeline from scratch."
+    why: "This pulls together everything from M5: master/slave topology, SSH credentials, Docker on agents, GitHub integration, Declarative Pipelines, PostgreSQL integration tests, secret management, and Vagrant automation. It's the Jenkins equivalent of the Ansible homework — a capstone that proves you can build a real CI/CD pipeline from scratch."
   },
 
   // ── Section 2: Vagrant environment ────────────────────────────────────────

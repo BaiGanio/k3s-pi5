@@ -1,4 +1,4 @@
-// modules/m4/ansible-intro.js
+// modules/ansible/ansible-intro.js
 // M4: Introduction to Ansible — Agentless Configuration Management
 // Extracted from DOB-M4 lecture (M4-Ansible.md), framed for .NET / Node.js stacks
 

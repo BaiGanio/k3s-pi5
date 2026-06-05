@@ -1,5 +1,5 @@
-// modules/m1-devops-intro.js
-// M1: Introduction to DevOps — From Local Dev to Production
+// modules/intro/devops-intro.js
+// Intro: Introduction to DevOps — From Local Dev to Production
 
 window.pageBlocks = [
 
@@ -72,78 +72,36 @@ window.pageBlocks = [
         <li>System libraries (OpenSSL, glibc, zlib)</li>
         <li>Language runtimes (Node.js, Python, Java, Go)</li>
         <li>Databases, message queues, caches</li>
-        <li>Configuration files and environment variables</li>
-        <li>Network topology (firewalls, load balancers, DNS)</li>
       </ul>
+    `,
+  },
 
-      <p>
-        <strong>Environment drift</strong> happens when these slowly diverge across environments.
-        Your laptop has Node 20, staging has Node 18, production has Node 16 — and one day, a
-        dependency starts using a feature that only exists in Node 20. The code passes all tests
-        locally but fails silently in production.
-      </p>
+  // ── Infrastructure as Code ───────────────────────────────────────────────
 
-      <h4>The Pre-DevOps Fix: Documentation</h4>
+  {
+    type: 'prose',
+    title: 'Infrastructure as Code (IaC)',
+    content: `
       <p>
-        "Install PostgreSQL 16. Run 'npm install'. Set these five environment variables."
-        Wikis, READMEs, and onboarding documents. They go stale the moment they're written.
-      </p>
-
-      <h4>The DevOps Fix: Infrastructure as Code (IaC)</h4>
-      <p>
-        Instead of documenting how to set up an environment, you <strong>encode it in files</strong>
-        that are version-controlled, reviewed, and executed. The same definition builds your
-        laptop VM, your CI pipeline, your staging environment, and — when extended carefully —
-        your production infrastructure.
+        Infrastructure as Code is the practice of managing and provisioning computing
+        infrastructure through machine-readable definition files, rather than physical
+        hardware configuration or interactive configuration tools.
       </p>
     `,
   },
 
-  // ── A Taste of Infrastructure as Code ────────────────────────────────────
+  // ── Vagrant Command Reference ────────────────────────────────────────────
 
   {
     type: 'commands',
-    section: 'taste',
-    sectionTitle: 'A Taste of Infrastructure as Code',
+    section: 'vagrant',
+    sectionTitle: 'Vagrant — Infrastructure as Code on Your Laptop',
     items: [
       {
-        id: 10,
-        commandTitle: 'Define a complete web server in 20 lines',
-        command: 'cat Vagrantfile',
-        searchTerms: 'vagrantfile example simple web server dotnet minimal api weather',
-        description: 'This Vagrantfile defines a complete Ubuntu web server running a .NET 10 Minimal API — all in version-controlled text. No clicking through installers, no "I ran these commands last month but forgot which ones".',
-        parts: [
-          { text: 'config.vm.box', explanation: 'the base OS image — Ubuntu 24.04 for ARM64' },
-          { text: 'config.vm.network "forwarded_port"', explanation: 'maps port 5000 from the VM to your Mac — open localhost:5000/weather in your browser' },
-          { text: 'config.vm.provision "shell"', explanation: 'runs these commands once on first boot — installs .NET SDK 10, scaffolds a Minimal API project, and starts it' },
-        ],
-        example: `Vagrant.configure("2") do |config|
-  config.vm.box = "bento/ubuntu-24.04-arm64"
-  config.vm.network "forwarded_port", guest: 5000, host: 5000
-  config.vm.provision "shell", inline: <<-SHELL
-    wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb
-    dpkg -i packages-microsoft-prod.deb && apt-get update -q
-    apt-get install -y dotnet-sdk-10.0
-    mkdir /var/www/weather && cd /var/www/weather && dotnet new web -o . --force
-    cat > Program.cs << 'CSHARP'
-var app = WebApplication.Create(args);
-var conditions = new[]{"Sunny","Cloudy","Rainy","Snowy"};
-app.MapGet("/weather", () => new {
-    TemperatureC = Random.Shared.Next(-20, 40),
-    Condition    = conditions[Random.Shared.Next(conditions.Length)]
-});
-app.Run("http://0.0.0.0:5000");
-CSHARP
-    nohup dotnet run --urls http://0.0.0.0:5000 &
-  SHELL
-end`,
-        why: 'This file is the single source of truth. Commit it to Git. Any developer on your team gets an identical environment with one command: <code>vagrant up</code>. Hit <code>localhost:5000/weather</code> and you get a live JSON response — instant proof the VM is up and the app is running.',
-      },
-      {
         id: 11,
-        commandTitle: 'Spin up the environment from nothing',
+        commandTitle: 'Bring up a development environment from zero',
         command: 'vagrant up --provider parallels',
-        searchTerms: 'vagrant up start vm from scratch infrastructure as code',
+        searchTerms: 'vagrant up parallels provider infrastructure as code reproducible',
         description: 'One command downloads the OS image, creates the VM, configures networking, installs .NET SDK 10, and starts your Minimal API. No manual steps, no hidden dependencies, no "works on my machine" surprises.',
         parts: [
           { text: 'vagrant up', explanation: 'the main IaC command — brings infrastructure from zero to running' },

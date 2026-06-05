@@ -1,6 +1,6 @@
-// modules/m1/practice-vagrant-docker.js
+// modules/intro/practice-vagrant-docker.js
 // k3s-pi5 practice lab for the VMs group — provision a single Docker host VM with Vagrant.
-// Lab files live in modules/m1/labs/intro/ (Vagrantfile + dobdocker.sh).
+// Lab files live in modules/intro/labs/intro/ (Vagrantfile + dobdocker.sh).
 // Parallels provider + native ARM64 Ubuntu — full speed on Apple Silicon. pageBlocks format.
 
 window.pageBlocks = [
@@ -51,10 +51,10 @@ window.pageBlocks = [
         <code>dobdocker.sh</code> turns "I think I installed Docker like this" into an exact,
         repeatable recipe — the essence of Infrastructure as Code.
       </p>
-      <p><strong>The two files you will write</strong> (they live in <code>modules/m1/labs/intro/</code>):</p>
+      <p><strong>The two files you will write</strong> (they live in <code>modules/intro/labs/intro/</code>):</p>
       <ul>
         <li><code>Vagrantfile</code> — declares the <code>dob-docker</code> VM: box, resources, network, port forward, and which provisioner to run.</li>
-        <li><code>dobdocker.sh</code> — the provisioner: installs Docker Engine from Docker's official APT repository and wires up the <code>vagrant</code> user.</li>
+        <li><code>dobdocker.sh</code> — the shell provisioner: installs Docker Engine from the official apt repo, enables and starts the daemon, and adds the <code>vagrant</code> user to the <code>docker</code> group so you can run containers without <code>sudo</code>.</li>
       </ul>
     `,
   },
@@ -65,38 +65,37 @@ window.pageBlocks = [
     content: 'This lab assumes Vagrant and the <code>vagrant-parallels</code> plugin are already installed — both are covered in the <em>Vagrant + Parallels on M1 Pro</em> module. If <code>vagrant plugin list</code> does not show <code>vagrant-parallels</code>, run <code>vagrant plugin install vagrant-parallels</code> first.',
   },
 
-  // ── Step 1: Project files ────────────────────────────────────────────────
+  // ── Step 1: Write the two files ────────────────────────────────────────────
   {
     type: 'commands',
     section: 'files',
-    sectionTitle: 'Set up the project files',
+    sectionTitle: 'Write the Vagrantfile and provisioner',
     items: [
       {
         id: 1,
-        commandTitle: 'Create the project folder',
+        commandTitle: 'Create a project folder',
         command: 'mkdir dob-docker && cd dob-docker',
-        searchTerms: 'mkdir cd project folder vagrant lab docker host',
-        description: 'Creates a clean folder to hold the <code>Vagrantfile</code>, the <code>dobdocker.sh</code> provisioner, and Vagrant\'s <code>.vagrant/</code> state directory. Run every command in this lab from here.',
+        searchTerms: 'mkdir cd project folder vagrant init dobdocker',
+        description: 'Creates a dedicated folder for this lab. Every Vagrant project lives in its own folder — the Vagrantfile and the <code>.vagrant/</code> state directory both go here.',
         parts: [
-          { text: 'mkdir dob-docker', explanation: 'each Vagrant project lives in its own folder so its state is isolated from other projects' },
-          { text: 'cd dob-docker', explanation: 'all vagrant commands act on the Vagrantfile in the current directory' },
+          { text: 'mkdir dob-docker && cd dob-docker', explanation: 'creates and enters the project folder — all vagrant commands from here operate on the Vagrantfile in this directory' },
         ],
-        example: "$ mkdir dob-docker && cd dob-docker\n$ pwd\n/Users/you/dob-docker",
-        why: "An empty folder makes the next two steps unambiguous — no stale Vagrantfile, .vagrant/ state, or cached box to conflict with.",
+        example: "$ pwd\n/Users/you/dob-docker",
+        why: 'Clean isolation: no existing Vagrantfile, no .vagrant/ state from other projects, no box conflicts.',
       },
       {
         id: 2,
         commandTitle: 'Write the Vagrantfile',
         command: 'cat Vagrantfile',
-        searchTerms: 'vagrantfile define box parallels private network forwarded port provision shell arm64 ubuntu',
-        description: 'Create a file named <code>Vagrantfile</code> in the project folder and paste the content from <strong>Example output</strong> below. It declares one VM, <code>dob-docker</code>, on the ARM64 Ubuntu box, wires a private-network IP and a forwarded port, and points the shell provisioner at <code>dobdocker.sh</code>.',
+        searchTerms: 'vagrantfile dobdocker box parallels network port forward provision shell script',
+        description: 'Create a file named <code>Vagrantfile</code> in your <code>dob-docker</code> folder — use any editor, VS Code, or right-click → New File. Copy the content from <strong>Example output</strong> below and paste it in. This file declares a single VM named <code>dobdocker</code> on the <code>bento/ubuntu-24.04-arm64</code> box with a private-network IP, port forward, and a shell provisioner.',
         parts: [
-          { text: "config.vm.define \"dobdocker\"", explanation: 'names the VM — Vagrant uses this as the machine identifier for up/ssh/halt/destroy' },
-          { text: "dobdocker.vm.box = \"bento/ubuntu-24.04-arm64\"", explanation: 'the native ARM64 Ubuntu 24.04 box — runs at full speed on Apple Silicon' },
-          { text: "private_network ip: \"192.168.56.100\"", explanation: 'static IP on an isolated host-only network — the VM is reachable from your Mac at this address' },
-          { text: "forwarded_port guest: 8080, host: 8080", explanation: 'maps VM port 8080 to localhost:8080 on your Mac; auto_correct picks another host port if 8080 is taken' },
-          { text: "provision \"shell\", path: \"dobdocker.sh\"", explanation: 'runs dobdocker.sh inside the VM on first boot — this is where Docker gets installed' },
-          { text: "provider :parallels", explanation: 'selects Parallels as the hypervisor and sizes the VM at 2 GB RAM / 2 vCPUs' },
+          { text: 'config.vm.define "dobdocker"', explanation: 'names the VM — Vagrant uses this identifier for up/ssh/halt/destroy' },
+          { text: 'bento/ubuntu-24.04-arm64', explanation: 'the native ARM64 Ubuntu 24.04 box — runs at full speed on Apple Silicon' },
+          { text: 'private_network ip: "192.168.56.100"', explanation: 'a static IP on an isolated host-only network — reachable from your Mac at this address' },
+          { text: 'forwarded_port guest: 8080, host: 8080', explanation: 'maps VM port 8080 to localhost:8080; auto_correct picks another host port if 8080 is taken' },
+          { text: 'provision "shell", path: "dobdocker.sh"', explanation: 'runs dobdocker.sh inside the VM on first boot — this is where Docker gets installed' },
+          { text: 'provider :parallels { memory = 2048; cpus = 2 }', explanation: 'selects Parallels and sizes the VM at 2 GB RAM / 2 vCPUs' },
         ],
         example: `# -*- mode: ruby -*-
 # vi: set ft=ruby :
@@ -121,20 +120,18 @@ Vagrant.configure("2") do |config|
   end
 
 end`,
-        why: "The Vagrantfile is the single declarative source of truth for the VM. Anyone who has it plus dobdocker.sh can reproduce the exact same Docker host with one command — that reproducibility is the whole point of Infrastructure as Code.",
+        why: 'The Vagrantfile is the declarative source of truth. Anyone with it plus the provisioner can reproduce the exact same host with one command — that is Infrastructure as Code in practice.',
       },
       {
         id: 3,
-        commandTitle: 'Write the dobdocker.sh provisioner',
+        commandTitle: 'Write the Docker provisioner script',
         command: 'cat dobdocker.sh',
-        searchTerms: 'provision shell script install docker engine apt ubuntu gpg key repository usermod group',
-        description: 'Create <code>dobdocker.sh</code> next to the Vagrantfile and paste the content below. Vagrant runs it as <strong>root</strong> inside the VM on first boot. It adds Docker\'s official APT repo, installs Docker Engine, enables the service, and adds the <code>vagrant</code> user to the <code>docker</code> group.',
+        searchTerms: 'dobdocker.sh shell provisioner docker install apt script',
+        description: 'Create a file named <code>dobdocker.sh</code> in the same <code>dob-docker</code> folder — same editor, same approach. This is the shell provisioner that runs as root inside the VM. Copy the content from <strong>Example output</strong> below.',
         parts: [
-          { text: 'set -e', explanation: 'aborts the whole script if any command fails, so a half-installed VM surfaces immediately instead of silently' },
-          { text: 'apt-get install ... ca-certificates curl gnupg', explanation: 'prerequisites for fetching and verifying the Docker repository signing key' },
-          { text: 'gpg --dearmor -o /etc/apt/keyrings/docker.gpg', explanation: "stores Docker's signing key so apt can verify the packages are authentic" },
-          { text: 'deb [arch=arm64 ...]', explanation: 'pins the repo to the ARM64 packages — matching the native architecture of the VM' },
-          { text: 'docker-ce docker-ce-cli containerd.io ...', explanation: 'the Engine, CLI, container runtime, and the buildx/compose plugins' },
+          { text: 'set -e', explanation: 'exits on first error — no partial installs that appear to succeed' },
+          { text: 'curl -fsSL https://download.docker.com/...', explanation: 'adds the official Docker apt repo, pinned to arm64 architecture' },
+          { text: 'apt-get install -y docker-ce docker-ce-cli ...', explanation: 'installs the full Docker Engine stack' },
           { text: 'usermod -aG docker vagrant', explanation: 'lets the vagrant user run docker without sudo (takes effect on the next login)' },
         ],
         example: `#!/bin/bash

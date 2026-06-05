@@ -53,9 +53,9 @@ storage provisioner out of the box, so a working cluster is minutes away — but
 what each built-in piece is doing.
 
 ### Modules
-- `m3-k3s-pi5` — pre-flight, install, kubectl access, cgroups v2.
-- `m3-verification` — cluster health checks and diagnostics.
-- `m3-quick-reference` — the daily `kubectl` cheatsheet you'll actually use.
+- `k3s-setup` — pre-flight, install, kubectl access, cgroups v2.
+- `k3s-verification` — cluster health checks and diagnostics.
+- `k3s-quick-reference` — the daily `kubectl` cheatsheet you'll actually use.
 
 ### Milestones
 1. `kubectl get nodes` from the MacBook shows the Pi as `Ready`.
@@ -71,9 +71,9 @@ survives a pod restart. The frontend reaches the API by Service name; the API re
 by Service name. Config comes from a ConfigMap, the DB password from a Secret.
 
 ### Modules
-- `m3-sample-apps` — Nginx smoke test, then the Node + Postgres app with the ConfigMap + Secret pattern.
-- `m3-persistent-storage` — StorageClass, PV, PVC for stateful workloads on the Pi's SSD.
-- `m3-nginx-ingress` — Traefik/ingress routing to the services.
+- `k3s-sample-apps` — Nginx smoke test, then the Node + Postgres app with the ConfigMap + Secret pattern.
+- `k3s-persistent-storage` — StorageClass, PV, PVC for stateful workloads on the Pi's SSD.
+- `k3s-nginx-ingress` — Traefik/ingress routing to the services.
 
 ### Milestones
 1. The Postgres pod is `Running`, its PVC is `Bound`; delete the pod and the data is still there.
@@ -91,10 +91,10 @@ Kubernetes Dashboard (with a proper RBAC ServiceAccount + token) for a UI, and w
 security and recovery basics.
 
 ### Modules
-- `m3-cloudflare-tunnel-pi5` — public exposure with no static IP.
-- `m3-k3s-dashboard` — Dashboard with RBAC ServiceAccount + token auth.
-- `m3-security` — secret rotation, token regen, k3s updates, PV backup.
-- `m3-troubleshooting` — stuck pods, `ImagePullBackOff`, `CrashLoopBackOff`, PVC pending, cgroup issues, DNS, OOMKilled.
+- `k3s-cloudflare-tunnel` — public exposure with no static IP.
+- `k3s-dashboard` — Dashboard with RBAC ServiceAccount + token auth.
+- `k3s-security` — secret rotation, token regen, k3s updates, PV backup.
+- `k3s-troubleshooting` — stuck pods, `ImagePullBackOff`, `CrashLoopBackOff`, PVC pending, cgroup issues, DNS, OOMKilled.
 
 ### Milestones
 1. From your phone on cellular (not WiFi), the public URL serves the app over valid HTTPS.

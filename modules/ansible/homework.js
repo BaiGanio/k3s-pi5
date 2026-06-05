@@ -1,4 +1,4 @@
-// modules/m4/homework.js
+// modules/ansible/homework.js
 // M4: Ansible — Homework (capstone)
 // Recast of Homework-M4-Ansible.md (PHP+MySQL) as a heterogeneous WEB+DB deploy
 // WEB: ASP.NET Core on CentOS  /  Node.js Express on Ubuntu  ·  DB: PostgreSQL
@@ -19,7 +19,7 @@ window.commandData = [
       { text: "one playbook, two roles", explanation: "a web-app role and a db role, applied to the right group each" },
     ],
     example: "Acceptance criteria:\n  ✓ DB host runs PostgreSQL, reachable from the WEB host\n  ✓ WEB host runs the app as a systemd service\n  ✓ App reads its connection string from a templated config\n  ✓ Re-running the playbook is a no-op (all 'ok')\n  ✓ curl http://<web>:8080 returns data from the DB",
-    why: "This pulls together everything: inventory groups, group_vars, roles, templates, handlers, when/facts, and orchestration order. It's the M4 equivalent of the M1/M2 exams."
+    why: "This pulls together everything: inventory groups, group_vars, roles, templates, handlers, when/facts, and orchestration order. It's the Ansible equivalent of the intro/m2 exams."
   },
 
   {

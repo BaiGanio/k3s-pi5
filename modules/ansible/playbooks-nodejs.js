@@ -1,4 +1,4 @@
-// modules/m4/playbooks-nodejs.js
+// modules/ansible/playbooks-nodejs.js
 // M4: Ansible — Playbooks (Node.js track)
 // Parallel to the .NET track: same Ansible concepts, an Express app instead
 

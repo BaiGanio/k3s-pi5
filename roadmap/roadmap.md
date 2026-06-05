@@ -90,7 +90,7 @@ Mirrors the live module registry (`lib/registry.js`). This table is the source o
 
 | Group | What's covered today |
 |---|---|
-| **Virtual Machines & Provisioning** 🛠️ | DevOps intro, Vagrant on Parallels and VMware (Apple Silicon, two-VM labs), a Docker-VM practice lab, an M1 exam — then Ansible: intro, inventory/vars, ad-hoc & modules, playbooks for ASP.NET Core *and* Node.js, roles/templates/Galaxy, a WEB+DB homework. |
+| **Virtual Machines & Provisioning** 🛠️ | DevOps intro, Vagrant on Parallels and VMware (Apple Silicon, two-VM labs), a Docker-VM practice lab, an intro exam — then Ansible: intro, inventory/vars, ad-hoc & modules, playbooks for ASP.NET Core *and* Node.js, roles/templates/Galaxy, a WEB+DB homework. |
 | **Containers (Docker)** 🐳 | Docker on the Pi 5, advanced Docker, nerdctl, Docker Compose with .NET, Docker Swarm with .NET, image-build practice, an M2 exam, homework. |
 | **Orchestration (k3s)** ☸️ | k3s on the Pi 5, Cloudflare Tunnel, Kubernetes Dashboard, Traefik/Nginx ingress, persistent storage, sample apps (Node + Postgres), quick reference, security notes, verification, troubleshooting. |
 | **CI/CD (Jenkins)** 🔄 | Jenkins intro, setup, jobs, pipelines, agents/slaves, Jenkins-in-Docker, homework — building/testing/containerizing/deploying .NET and Node.js apps backed by Postgres, on dedicated Vagrant VMs. |

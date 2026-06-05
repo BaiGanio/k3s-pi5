@@ -1,4 +1,4 @@
-// modules/m4/playbooks-dotnet.js
+// modules/ansible/playbooks-dotnet.js
 // M4: Ansible — Playbooks (.NET track)
 // Recast of the DOB-M4 Apache/PHP playbook practice as an ASP.NET Core deployment
 

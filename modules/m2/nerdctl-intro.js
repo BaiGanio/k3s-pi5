@@ -1,4 +1,4 @@
-// modules/m1-devops-intro.js
+// modules/m2/nerdctl-intro.js
 // M2: Containers
 
 window.commandData = [

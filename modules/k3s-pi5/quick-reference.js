@@ -36,60 +36,58 @@ window.commandData = [
 
   {
     id: 702, section: "quickref", sectionTitle: "kubectl Quick Reference",
-    commandTitle: "Service & Ingress Inspection",
-    command: "kubectl get svc\nkubectl get ingress -A\nkubectl describe ingress <name>",
-    searchTerms: "kubectl get svc service ingress describe list networking",
-    description: "Inspect the networking layer — which services exist, what their cluster IPs are, and what Ingress rules Traefik is reading.",
+    commandTitle: "Service & Endpoint Inspection",
+    command: "kubectl get svc,endpoints -A",
+    searchTerms: "kubectl get svc endpoints service list all namespaces clusterip",
+    description: "Lists every Service and its resolved Endpoints across all namespaces. An Endpoint with no addresses means the label selector isn't matching any running pods.",
     parts: [
-      { text: "kubectl get svc",            explanation: "lists Services with their ClusterIP and port mappings" },
-      { text: "kubectl get ingress -A",     explanation: "lists all Ingress rules across namespaces with hostnames and backend addresses" },
-      { text: "kubectl describe ingress",   explanation: "shows the full Ingress spec and Events — Events show if Traefik found the backend Service" }
+      { text: "kubectl get svc,endpoints", explanation: "comma-separated resource types — queries both at once" },
+      { text: "-A",                         explanation: "across all namespaces" }
     ],
-    example: "# Check if your node-api service has an endpoint:\nkubectl get endpoints node-api\n# NAME       ENDPOINTS\n# node-api   10.42.0.15:3000   ← healthy pod endpoint\n# node-api   <none>            ← no pod matched the selector\n\n# Quick network debug:\nkubectl get svc,ingress,endpoints -l app=node-api",
-    why: "An empty ENDPOINTS column means the Service selector doesn't match any pod labels. This is a common cause of 503 errors — the Service exists but has no pods to route to."
+    example: "NAMESPACE   NAME          TYPE        CLUSTER-IP     PORT(S)\ndefault     node-api      ClusterIP   10.43.200.10   80/TCP\ndefault     postgres      ClusterIP   10.43.100.5    5432/TCP\n\nNAMESPACE   NAME          ENDPOINTS\ndefault     node-api      10.42.0.15:3000\ndefault     postgres      10.42.0.10:5432",
+    why: "If ENDPOINTS is empty for a service, the Service's label selector doesn't match any running pod. Check pod labels with 'kubectl get pods --show-labels'."
   },
 
   {
     id: 703, section: "quickref", sectionTitle: "kubectl Quick Reference",
-    commandTitle: "Resource Monitoring",
-    command: "kubectl top nodes\nkubectl top pods -A",
-    searchTerms: "kubectl top nodes pods cpu memory resource monitoring usage",
-    description: "Real-time CPU and memory consumption for the Pi node and all pods. Essential for keeping the Pi 5 healthy under load.",
+    commandTitle: "ConfigMap & Secret Management",
+    command: "kubectl get configmap,secret\nkubectl create configmap <name> --from-literal=key=value\nkubectl create secret generic <name> --from-literal=key=value",
+    searchTerms: "configmap secret kubectl create from-literal env vars",
+    description: "Lists and creates ConfigMaps and Secrets. These inject environment variables into pods — use ConfigMaps for non-sensitive data, Secrets for passwords.",
     parts: [
-      { text: "kubectl top nodes",    explanation: "shows total CPU/memory consumed on the Pi node, and the % of allocatable capacity used" },
-      { text: "kubectl top pods -A",  explanation: "per-pod breakdown — spot which pod is consuming disproportionate resources" }
+      { text: "kubectl get configmap,secret", explanation: "lists both resource types in the current namespace" },
+      { text: "--from-literal=key=value",      explanation: "creates a single key-value pair directly from the command line" }
     ],
-    example: "kubectl top nodes\n# NAME   CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%\n# pi5    312m         7%     1842Mi          22%\n\nkubectl top pods -A\n# NAMESPACE   NAME            CPU     MEMORY\n# default     postgres-...    22m     134Mi\n# default     node-api-...    12m     85Mi\n\n# If metrics-server isn't installed:\nkubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml",
-    why: "kubectl top requires the metrics-server to be running. K3s includes it by default, but if top returns 'Metrics API not available', deploy it from the URL in the example."
+    example: "# View ConfigMap data (decoded):\nkubectl get configmap postgres-config -o yaml\n\n# View Secret data (base64 decoded):\nkubectl get secret postgres-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d",
+    why: "Secrets are base64-encoded at rest, not encrypted. Never commit Secret YAML to git — use 'kubectl create secret' from the command line instead."
   },
 
   {
     id: 704, section: "quickref", sectionTitle: "kubectl Quick Reference",
-    commandTitle: "Cluster Events & Node Debugging",
-    command: "kubectl get events -A --sort-by='.lastTimestamp'\nkubectl describe node",
-    searchTerms: "kubectl events debug node describe sort timestamp cluster problems",
-    description: "Events show what's happened across the cluster sorted by time — OOMKills, pull failures, scheduling failures all appear here. Node describe shows hardware capacity and conditions.",
+    commandTitle: "Namespace Operations",
+    command: "kubectl get ns\nkubectl create ns <name>\nkubectl config set-context --current --namespace=<name>",
+    searchTerms: "kubectl namespace get create set-context default",
+    description: "Namespace basics — list, create, and switch your default namespace. Switching saves you from adding -n to every command.",
     parts: [
-      { text: "kubectl get events -A",                explanation: "lists all cluster events across namespaces" },
-      { text: "--sort-by='.lastTimestamp'",            explanation: "sorts newest events last so you can see the most recent issues at the bottom" },
-      { text: "kubectl describe node",                 explanation: "shows Pi hardware info, allocatable resources, running pods, and node conditions" }
+      { text: "kubectl get ns",        explanation: "lists all namespaces with their status and age" },
+      { text: "kubectl create ns",     explanation: "creates a new namespace for isolating workloads" },
+      { text: "kubectl config set-context", explanation: "switches your default namespace for all subsequent commands" }
     ],
-    example: "# Filter for only warnings:\nkubectl get events -A --sort-by='.lastTimestamp' --field-selector=type=Warning\n\n# See what's scheduled on the node:\nkubectl describe node | grep -A 20 'Non-terminated Pods'\n\n# Common warning events:\n# OOMKilling       → a pod exceeded its memory limit\n# FailedScheduling → not enough CPU/RAM to place a pod\n# BackOff          → container crash loop",
-    why: "Events expire after ~1 hour by default. If a pod crashed and you missed it, check Events before the window closes — they often contain the root cause that logs don't show."
+    example: "# Switch to a namespace:\nkubectl config set-context --current --namespace=staging\n\n# Switch back to default:\nkubectl config set-context --current --namespace=default\n\n# View all namespaces:\nkubectl get ns",
+    why: "Use namespaces to separate staging from production on a single Pi. It's the cheapest form of environment isolation without spinning up a second cluster."
   },
 
   {
-    id: 705, section: "quickref", sectionTitle: "kubectl Quick Reference",
-    commandTitle: "Non-Root kubectl Access",
-    command: "mkdir -p ~/.kube && sudo k3s kubectl config view --raw | sudo tee ~/.kube/config > /dev/null && sudo chown $(id -u):$(id -g) ~/.kube/config && sudo chmod 600 ~/.kube/config",
-    searchTerms: "kubeconfig non-root sudo kubectl access config view raw kube",
-    description: "One-time setup: copies the k3s admin kubeconfig to your user's ~/.kube/config so you can run all kubectl commands without sudo.",
+    id: 800, section: "quickref", sectionTitle: "kubectl Quick Reference",
+    commandTitle: "Fix kubectl Permission Issues",
+    command: "sudo chown -R $USER:$USER ~/.kube",
+    searchTerms: "kubectl permission denied sudo chown fix",
+    description: "Fixes 'Permission denied' errors when kubectl was run with sudo. K3s's kubeconfig is root-owned by default; this gives your user ownership of your local kubeconfig.",
     parts: [
-      { text: "k3s kubectl config view --raw", explanation: "outputs the full kubeconfig including embedded TLS certificates (not paths to files)" },
-      { text: "tee ~/.kube/config",            explanation: "writes it to the standard kubectl config path" },
-      { text: "chmod 600",                     explanation: "kubectl refuses to load configs that are group- or world-readable — this is a required permission" }
+      { text: "sudo chown -R $USER:$USER", explanation: "recursively changes file ownership to the current user" },
+      { text: "~/.kube",                    explanation: "the directory where kubeconfig files live" }
     ],
-    example: "# Verify it worked:\nkubectl get nodes\n# NAME   STATUS   ROLES                  AGE   VERSION\n# pi5    Ready    control-plane,master   5d    v1.29.x+k3s1\n\n# If you get 'permission denied' on the config file itself:\nls -la ~/.kube/config\n# Should show: -rw------- 1 pi pi",
+    example: "# Before fix:\n$ kubectl get nodes\nError: loading config file ~/.kube/config: permission denied\n\n# After fix:\n$ kubectl get nodes\nNAME       STATUS   ROLES    AGE\npi5-k3s    Ready    master   24h",
     why: "Every kubectl command with sudo runs as root and writes root-owned files to your home directory. This one-time step prevents permission headaches across all future sessions."
   },
 

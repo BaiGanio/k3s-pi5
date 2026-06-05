@@ -9,21 +9,20 @@
 |---|---|---|---|
 | 1 | Scenario A — Direct Fetch (no cache) | ✅ Done | Passthrough proxy, zero DB dependency |
 | 2 | Scenario B — .NET Proxy + PostgreSQL Cache | ✅ Done | Cache-aside pattern, configurable TTL |
-| 3 | Scenario C — Full Sync (bulk import) | ✅ Done | Background `IHostedService`, daily cron |
-| 4 | Scenario D — Containerized on k3s | ✅ Done | Architecture mapping: VMs → Kubernetes Deployments/Services |
-| 5 | Rate limiter on .NET API | ✅ Done | Fixed-window policy, 100 req/min per IP, configurable via env vars |
-| 6 | Docker Compose quick-start | ✅ Done | Single-command local dev; `docker compose up` spins all 3 services |
-| 7 | Monitoring & backups | ✅ Done | Health checks, `pg_dump` cron, Prometheus metrics endpoint stub |
-| 8 | Curriculum mapping (k3s-pi5 modules) | ✅ Done | Table mapping README concepts → site modules |
-| 9 | CI/CD pipeline (Jenkins) | ✅ Done | Curriculum: self-hosted Jenkins (master + agents on Vagrant VMs) — build → test → containerize → deploy the .NET & Node apps. GitHub Actions variant optional |
-| 10 | Config management (Ansible) | ✅ Done | Curriculum: agentless playbooks deploy the .NET & Node apps as `systemd` services, backed by Postgres |
-| 11 | Monitoring (Nagios Core) | ✅ Done | Curriculum: check-based monitoring + alerting for the APIs, Postgres, and containers |
-| 12 | Cloud reach (AWS free tier) | ✅ Done | Curriculum: EC2, IAM + CLI, ECS, Vagrant cloud provisioning — cost-aware, free-tier |
-| 13 | Add Redis L1 cache layer | ⏳ Planned | Sub-millisecond cache between the API and Postgres |
-| 14 | Add Auth (JWT + API keys) | ⏳ Planned | Protect API endpoints; the frontend sends bearer tokens |
-| 15 | Observability stack (Prometheus + Grafana + Loki) | 🔭 Optional | Richer metrics/logs/dashboards alongside Nagios |
-| 16 | Infrastructure as Code (Terraform) | 🔭 Optional | Provision cloud resources declaratively; drift detection |
-| 17 | GitOps (ArgoCD or Flux) | 🔭 Optional | App-of-apps; reconcile the cluster from Git; PR-based deploys |
+| 3 | Scenario C — Containerized on k3s | ✅ Done | Architecture mapping: VMs → Kubernetes Deployments/Services |
+| 4 | Rate limiter on .NET API | ✅ Done | Fixed-window policy, 100 req/min per IP, configurable via env vars |
+| 5 | Docker Compose quick-start | ✅ Done | Single-command local dev; `docker compose up` spins all 3 services |
+| 6 | Monitoring & backups | ✅ Done | Health checks, `pg_dump` cron, Prometheus metrics endpoint stub |
+| 7 | Curriculum mapping (k3s-pi5 modules) | ✅ Done | Table mapping README concepts → site modules |
+| 8 | CI/CD pipeline (Jenkins) | ✅ Done | Curriculum: self-hosted Jenkins (master + agents on Vagrant VMs) — build → test → containerize → deploy the .NET & Node apps. GitHub Actions variant optional |
+| 9 | Config management (Ansible) | ✅ Done | Curriculum: agentless playbooks deploy the .NET & Node apps as `systemd` services, backed by Postgres |
+| 10 | Monitoring (Nagios Core) | ✅ Done | Curriculum: check-based monitoring + alerting for the APIs, Postgres, and containers |
+| 11 | Cloud reach (AWS free tier) | ✅ Done | Curriculum: EC2, IAM + CLI, ECS, Vagrant cloud provisioning — cost-aware, free-tier |
+| 12 | Add Redis L1 cache layer | ⏳ Planned | Sub-millisecond cache between the API and Postgres |
+| 13 | Add Auth (JWT + API keys) | ⏳ Planned | Protect API endpoints; the frontend sends bearer tokens |
+| 14 | Observability stack (Prometheus + Grafana + Loki) | 🔭 Optional | Richer metrics/logs/dashboards alongside Nagios |
+| 15 | Infrastructure as Code (Terraform) | 🔭 Optional | Provision cloud resources declaratively; drift detection |
+| 16 | GitOps (ArgoCD or Flux) | 🔭 Optional | App-of-apps; reconcile the cluster from Git; PR-based deploys |
 
 ---
 
@@ -74,8 +73,7 @@ Together they're a "genius + everyman" duo, and the perfect metaphor for a backe
 - [Data Flow Scenarios](#data-flow-scenarios)
   - [Scenario A: Direct Fetch (No Cache)](#scenario-a-direct-fetch-no-cache)
   - [Scenario B: .NET Proxy with PostgreSQL Cache](#scenario-b-net-proxy-with-postgresql-cache)
-  - [Scenario C: Full Sync — Bulk Import to PostgreSQL](#scenario-c-full-sync--bulk-import-to-postgresql)
-  - [Scenario D: Containerized on k3s](#scenario-d-containerized-on-k3s)
+  - [Scenario C: Containerized on k3s](#scenario-c-containerized-on-k3s)
 - [Code Examples](#code-examples)
   - [Node.js — Fetch Characters](#nodejs--fetch-characters)
   - [.NET — Proxy Controller with Rate Limiting](#net--proxy-controller-with-rate-limiting)
@@ -130,7 +128,6 @@ This makes it an ideal API for practicing real-world multi-service integration p
 │  • Rate-limited (100 req/min per IP, configurable)      │
 │  • Handles caching logic (DB or in-memory)              │
 │  • Exposes internal REST endpoints to VM1               │
-│  • Runs scheduled sync jobs to populate VM3             │
 │  • Exposes /health and /metrics endpoints               │
 └──────────┬──────────────────────────┬───────────────────┘
            │ HTTP (internal)          │ TCP 5432
@@ -147,7 +144,7 @@ This makes it an ideal API for practicing real-world multi-service integration p
 
 Each service is independently deployable. The .NET layer is the central orchestrator — it decides whether to serve data from PostgreSQL cache or fetch fresh from the upstream Rick and Morty API, all while enforcing rate limits to protect both itself and the upstream.
 
-**Evolution path:** VMs → Docker Compose (this README) → k3s/Kubernetes (Scenario D) → automated delivery & monitoring (Jenkins, Nagios — curriculum Phase 3) → cloud reach (AWS — Phase 4). GitOps with ArgoCD is an optional later step.
+**Evolution path:** VMs → Docker Compose (this README) → k3s/Kubernetes (Scenario C) → automated delivery & monitoring (Jenkins, Nagios — curriculum Phase 3) → cloud reach (AWS — Phase 4). GitOps with ArgoCD is an optional later step.
 
 ---
 
@@ -180,7 +177,7 @@ NEXT_PUBLIC_APP_NAME=Rick & Morty Explorer
 
 ### VM2 — .NET API Layer
 
-**Role:** Backend API gateway. Proxies the external Rick and Morty API, enforces rate limits, applies caching, data enrichment, and business logic. Also runs background sync workers to populate the database on VM3.
+**Role:** Backend API gateway. Proxies the external Rick and Morty API, enforces rate limits, applies caching, data enrichment, and business logic.
 
 | Setting | Value |
 |---|---|
@@ -344,27 +341,7 @@ VM1  →  VM2  →  VM3 (cache hit?) ──yes──→  return cached data
 
 ---
 
-### Scenario C: Full Sync — Bulk Import to PostgreSQL
-
-A background job on VM2 (e.g. a hosted `IHostedService` or cron) walks all paginated pages of the Rick and Morty API and bulk-inserts every character, location, and episode into VM3. VM1 then queries VM2 which reads entirely from the DB — no live upstream calls during normal operation.
-
-```
-[Scheduled Job on VM2]
-    ↓  GET /api/character?page=1..42
-    rickandmortyapi.com
-    ↓  bulk insert
-    VM3 (PostgreSQL)
-
-VM1  →  VM2  →  VM3 (all reads from DB)
-```
-
-**When to use:** High-traffic apps, full-text search requirements, analytics, data enrichment pipelines, or when upstream API availability cannot be relied on.
-
-**Sync frequency:** Daily is sufficient — the show is no longer in production, so data is largely stable.
-
----
-
-### Scenario D: Containerized on k3s
+### Scenario C: Containerized on k3s
 
 This is the bridge from VMs to Kubernetes. Each VM maps to a Kubernetes resource running on the k3s cluster on a Raspberry Pi 5.
 
@@ -460,15 +437,6 @@ builder.Services.AddRateLimiter(options =>
         config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         config.QueueLimit = 0; // No queueing — reject immediately when limit hit
     });
-
-    // Optional: stricter limit for the sync endpoint to prevent abuse
-    options.AddFixedWindowLimiter(policyName: "sync", config =>
-    {
-        config.PermitLimit = 2;
-        config.Window = TimeSpan.FromMinutes(10);
-        config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        config.QueueLimit = 0;
-    });
 });
 
 var app = builder.Build();
@@ -530,27 +498,11 @@ public class CharactersController : ControllerBase
     [DisableRateLimiting]
     public IActionResult Metrics() => Ok(new { requests_served = _counter, cache_hits = _cacheHits });
 }
-
-// Sync controller — stricter rate limit (2 req per 10 min)
-[ApiController]
-[Route("api/[controller]")]
-[EnableRateLimiting("sync")]
-public class SyncController : ControllerBase
-{
-    [HttpPost("run")]
-    public async Task<IActionResult> RunSync()
-    {
-        // Walk all pages, bulk-insert into PostgreSQL (Scenario C)
-        // ...
-        return Ok(new { synced = DateTime.UtcNow, pages = 42 });
-    }
-}
 ```
 
 **Why rate limiting matters here:**
 - Protects the upstream Rick and Morty API from accidental abuse (no auth = no per-user throttling)
 - Prevents a runaway frontend loop from taking down the .NET API
-- The sync endpoint gets a separate, stricter policy — full syncs are expensive
 - Health and metrics endpoints are excluded — k8s probes and Prometheus scrapes must never be throttled
 - The `X-RateLimit-Retry-After` header is automatically added to 429 responses by ASP.NET Core
 
@@ -673,9 +625,6 @@ docker compose up -d
 # Check status:
 docker compose ps
 
-# Trigger a full sync:
-curl -X POST http://localhost:5000/api/sync/run
-
 # Open the frontend:
 open http://localhost:3000
 
@@ -695,8 +644,6 @@ docker compose down -v
 | `CACHE_TTL_MINUTES` | VM2 / .NET | How long cached data is considered fresh (default: 60) |
 | `RATE_LIMIT_PERMIT_LIMIT` | VM2 / .NET | Max requests per window per IP (default: 100) |
 | `RATE_LIMIT_WINDOW_SECONDS` | VM2 / .NET | Rate limit window duration in seconds (default: 60) |
-| `SYNC_ENABLED` | VM2 / .NET | `true`/`false` — enable the background full-sync job |
-| `SYNC_CRON` | VM2 / .NET | Cron expression for sync schedule, e.g. `0 3 * * *` |
 | `DB_HOST` | VM3 / Postgres | Postgres host (used in monitoring/backups) |
 
 Store secrets in `.env` files locally and in your secret manager (Vault, AWS Secrets Manager, Azure Key Vault) in deployed environments. Never commit credentials.
@@ -735,11 +682,6 @@ cd vm1/
 npm install
 npm run dev
 # Listens on http://0.0.0.0:3000
-```
-
-**Optional — trigger a full sync manually via VM2:**
-```bash
-curl -X POST http://192.168.1.20:5000/api/sync/run
 ```
 
 ---
@@ -784,7 +726,6 @@ pg_restore -U app -d rickmorty /backups/rickmorty_20260605.dump
 | Rate limit hits (429 responses) | ASP.NET Core built-in counters | Indicates abuse or a misbehaving client |
 | PostgreSQL connection count | `pg_stat_activity` | Connection leaks are the #1 cause of DB outages |
 | Disk usage on VM3 | `df -h /var/lib/postgresql` | Full disk = database stops writing |
-| Sync job status | App logs + last `synced_at` in DB | Sync failures mean stale data served to users |
 
 ---
 
@@ -800,7 +741,7 @@ This README is the **reference implementation** that the [k3s-pi5 learning platf
 | .NET API + PostgreSQL | Orchestration (k3s) — Sample Apps | Node.js + Postgres on k3s; ConfigMaps, Secrets, Ingress |
 | PostgreSQL schema + PVC | Orchestration (k3s) — Persistent Storage | StatefulSets, PVCs, storage classes on ARM64 |
 | Rate limiting / hardening | Orchestration (k3s) — Security | Secrets rotation, RBAC, NetworkPolicy notes |
-| Scenario D (k3s) | Orchestration (k3s) — Setup on Pi 5 | Cluster setup, Cloudflare Tunnel |
+| Scenario C (k3s) | Orchestration (k3s) — Setup on Pi 5 | Cluster setup, Cloudflare Tunnel |
 | Build → test → deploy | CI/CD (Jenkins) | Self-hosted pipelines on Vagrant VMs (master + agents) |
 | Monitoring & backups | Monitoring (Nagios Core) | Check-based monitoring + alerting for APIs, Postgres, containers |
 | Cloud reach | Cloud (AWS, free tier) | EC2, IAM + CLI, ECS, Vagrant cloud provisioning |
@@ -817,11 +758,11 @@ This README is the **reference implementation** that the [k3s-pi5 learning platf
 | **GraphQL on VM2** | Replace REST proxy with a GraphQL layer using Hot Chocolate (.NET) — query `rickandmortyapi.com/graphql` upstream. |
 | **Authentication** | Add JWT middleware to VM2. VM1 sends bearer tokens; VM2 validates before serving data. |
 | **Search** | Use PostgreSQL full-text search (`to_tsvector`) on the `characters` table for name/species search. |
-| **Containerise** | Wrap each service in a Dockerfile. Use Docker Compose (see above) or Kubernetes (see Scenario D). |
+| **Containerise** | Wrap each service in a Dockerfile. Use Docker Compose (see above) or Kubernetes (see Scenario C). |
 | **Event streaming** | Emit character sync events from VM2 to a message broker (RabbitMQ / Kafka). Other consumers can react to updates independently. |
 | **Analytics** | Add a fourth service (Python / dbt) that reads from VM3 and builds aggregate reports — episode appearance counts, species breakdowns, etc. |
 | **CI/CD Pipeline** | The curriculum's built path uses self-hosted **Jenkins** (curriculum Phase 3). As an optional variant: a GitHub Actions workflow on push → `docker buildx` for `linux/arm64` → push to GHCR → update image tag in a Helm chart → ArgoCD syncs to k3s. |
-| **TLS Everywhere** | cert-manager + Let's Encrypt on k3s (Scenario D). For VMs: terminate TLS at an Nginx reverse proxy in front of VM2. |
+| **TLS Everywhere** | cert-manager + Let's Encrypt on k3s (Scenario C). For VMs: terminate TLS at an Nginx reverse proxy in front of VM2. |
 
 ---
 

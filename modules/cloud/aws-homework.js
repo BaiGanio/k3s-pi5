@@ -12,7 +12,7 @@ window.commandData = [
     commandTitle: "Goal — replicate a multi-tier environment from previous modules on AWS",
     command: "cat README.md",
     searchTerms: "homework assignment aws ec2 multi-tier replicate vagrant cli postgresql dotnet nodejs",
-    description: "Take any multi-tier environment from Modules 1-5 (e.g. the M4 WEB+DB stack or the M5 Jenkins master+slave) and deploy it on AWS instead of local VirtualBox VMs. Use the AWS CLI, the web console, or Vagrant+AWS — your choice. Every resource must be in the free tier. The deployment must include at least two EC2 instances (web/app + database), security groups, and a working connection between them.",
+    description: "Take any multi-tier environment from Modules 1-5 (e.g. the Ansible WEB+DB stack or the Jenkins master+slave) and deploy it on AWS instead of local VirtualBox VMs. Use the AWS CLI, the web console, or Vagrant+AWS — your choice. Every resource must be in the free tier. The deployment must include at least two EC2 instances (web/app + database), security groups, and a working connection between them.",
     parts: [
       { text: "Two EC2 instances minimum", explanation: "one for the application (.NET or Node.js), one for PostgreSQL" },
       { text: "Security groups", explanation: "SSH restricted to your IP, app port open to the world, PostgreSQL open only to the app security group" },

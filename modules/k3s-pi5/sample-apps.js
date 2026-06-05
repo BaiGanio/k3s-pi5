@@ -30,44 +30,27 @@ window.commandData = [
       { text: "image: node:20-alpine",             explanation: "lightweight Node.js LTS base image — ARM64 compatible, ~180 MB" },
       { text: "service port 80 → targetPort 3000", explanation: "the Service translates external port 80 to the Node.js app's internal port 3000" }
     ],
-    example: "# node-api-deployment.yaml\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: node-api-config\ndata:\n  DB_HOST: postgres\n  DB_PORT: \"5432\"\n  DB_NAME: appdb\n  DB_USER: appuser\n  PORT: \"3000\"\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: node-api-secret\ntype: Opaque\nstringData:\n  DB_PASSWORD: \"changeme123\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: node-api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: node-api\n  template:\n    metadata:\n      labels:\n        app: node-api\n    spec:\n      containers:\n      - name: node-api\n        image: node:20-alpine\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: node-api-config\n        - secretRef:\n            name: node-api-secret\n        resources:\n          requests:\n            memory: \"128Mi\"\n            cpu: \"100m\"\n          limits:\n            memory: \"256Mi\"\n            cpu: \"500m\"\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: node-api\nspec:\n  selector:\n    app: node-api\n  ports:\n  - port: 80\n    targetPort: 3000\n  type: ClusterIP\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: node-api\n  annotations:\n    traefik.ingress.kubernetes.io/router.entrypoints: web\nspec:\n  rules:\n  - host: api.yourdomain.com\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: node-api\n            port:\n              number: 80",
-    why: "Separating config (ConfigMap) from credentials (Secret) follows the 12-factor app pattern. You can update DB_HOST without touching the secret, and rotate passwords without redeploying config."
+    example: "# node-api-deployment.yaml\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: node-api-config\ndata:\n  DB_HOST: postgres\n  DB_PORT: \"5432\"\n  DB_NAME: appdb\n  DB_USER: appuser\n  PORT: \"3000\"\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: node-api-secret\ntype: Opaque\nstringData:\n  DB_PASSWORD: \"changeme123\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: node-api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: node-api\n  template:\n    metadata:\n      labels:\n        app: node-api\n    spec:\n      containers:\n      - name: node-api\n        image: node:20-alpine\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: node-api-config\n        - secretRef:\n            name: node-api-secret\n        env:\n        - name: DATABASE_URL\n          value: \"postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)\"\n        resources:\n          requests:\n            memory: \"128Mi\"\n            cpu: \"100m\"\n          limits:\n            memory: \"256Mi\"\n            cpu: \"500m\"\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: node-api\nspec:\n  selector:\n    app: node-api\n  ports:\n  - port: 80\n    targetPort: 3000\n  type: ClusterIP\n\n# Deploy:\nkubectl apply -f node-api-deployment.yaml",
+    why: "DATABASE_URL is constructed from the individual env vars — this makes it easy to change DB_HOST or DB_PASSWORD in one place without touching the connection string format."
   },
 
   {
     id: 502, section: "apps", sectionTitle: "Sample Applications",
-    commandTitle: "Deploy PostgreSQL Database",
-    command: "kubectl apply -f postgres-deployment.yaml",
-    searchTerms: "postgres postgresql deploy alpine persistent pvc secret configmap 5432",
-    description: "Deploys PostgreSQL 15 (Alpine) connected to the database-pvc PersistentVolumeClaim. Data survives pod restarts. Must be deployed before the Node.js API or the API will crash on startup.",
+    commandTitle: "Verify Node.js Deployment",
+    command: "kubectl get deployment,svc,pods -l app=node-api",
+    searchTerms: "kubectl get deployment svc pods label verify status node-api",
+    description: "Lists everything with label app=node-api: the Deployment, its Service, and the running Pods. All-in-one status check.",
     parts: [
-      { text: "image: postgres:15-alpine",                      explanation: "ARM64-compatible, ~80 MB — much lighter than the default debian-based image" },
-      { text: "mountPath: /var/lib/postgresql/data",            explanation: "the directory Postgres writes WAL logs and table files to — must be on persistent storage" },
-      { text: "subPath: postgres",                              explanation: "namespaces data inside the PVC so the volume can be shared with other services later" },
-      { text: "claimName: database-pvc",                        explanation: "references the PVC from the Persistent Storage section — must exist before applying this" },
-      { text: "type: ClusterIP",                                explanation: "Postgres is internal-only — Node.js pods reach it via 'postgres:5432', the internet cannot" }
+      { text: "kubectl get",                explanation: "generic resource retriever" },
+      { text: "deployment,svc,pods",        explanation: "comma-separated resource types — queries all three at once" },
+      { text: "-l app=node-api",            explanation: "label selector — only shows resources matching this label" }
     ],
-    example: "# postgres-deployment.yaml\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: postgres-config\ndata:\n  POSTGRES_DB: appdb\n  POSTGRES_USER: appuser\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: postgres-secret\ntype: Opaque\nstringData:\n  POSTGRES_PASSWORD: \"changeme123\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: postgres\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: postgres\n  template:\n    metadata:\n      labels:\n        app: postgres\n    spec:\n      containers:\n      - name: postgres\n        image: postgres:15-alpine\n        ports:\n        - containerPort: 5432\n        envFrom:\n        - configMapRef:\n            name: postgres-config\n        - secretRef:\n            name: postgres-secret\n        volumeMounts:\n        - name: postgres-storage\n          mountPath: /var/lib/postgresql/data\n          subPath: postgres\n        resources:\n          requests:\n            memory: \"256Mi\"\n            cpu: \"250m\"\n          limits:\n            memory: \"512Mi\"\n            cpu: \"500m\"\n      volumes:\n      - name: postgres-storage\n        persistentVolumeClaim:\n          claimName: database-pvc\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: postgres\nspec:\n  selector:\n    app: postgres\n  ports:\n  - port: 5432\n    targetPort: 5432\n  type: ClusterIP",
-    why: "Deploy order matters: PVC → PostgreSQL → Node.js API. The Node.js app reads DATABASE_URL on startup — if Postgres isn't ready, the API pod enters CrashLoopBackOff."
-  },
-
-  {
-    id: 503, section: "apps", sectionTitle: "Sample Applications",
-    commandTitle: "Verify Node.js App Deployment",
-    command: "kubectl get deployment node-api && kubectl get pods -l app=node-api && kubectl logs -l app=node-api",
-    searchTerms: "get deployment pods logs verify check running node-api status",
-    description: "Three quick checks after deploying: confirm the Deployment exists, the pod is Running, and the app logs show a successful startup (listening on port, DB connected).",
-    parts: [
-      { text: "kubectl get deployment node-api",    explanation: "shows READY count — should show 1/1 after ~30 seconds" },
-      { text: "kubectl get pods -l app=node-api",   explanation: "shows pod STATUS — Running means the container is up; CrashLoopBackOff means check logs" },
-      { text: "kubectl logs -l app=node-api",       explanation: "shows stdout from your Node.js process — look for 'listening on port 3000' and no DB errors" }
-    ],
-    example: "NAME       READY   UP-TO-DATE   AVAILABLE\nnode-api   1/1     1            1\n\nNAME             READY   STATUS    RESTARTS\nnode-api-abc12   1/1     Running   0\n\n# Logs:\nServer listening on port 3000\nConnected to PostgreSQL at postgres:5432/appdb\nGET /health 200 4ms",
+    example: "NAME                    READY   UP-TO-DATE   AVAILABLE\ndeployment.apps/node-api   1/1     1            1\n\nNAME             READY   STATUS    RESTARTS\nnode-api-abc12   1/1     Running   0\n\n# Logs:\nServer listening on port 3000\nConnected to PostgreSQL at postgres:5432/appdb\nGET /health 200 4ms",
     why: "RESTARTS > 0 means the container crashed and k3s restarted it. Check logs immediately — the startup error is usually a missing env var or Postgres connection refused."
   },
 
   {
-    id: 504, section: "apps", sectionTitle: "Sample Applications",
+    id: 503, section: "apps", sectionTitle: "Sample Applications",
     commandTitle: "Test Postgres Connection from Node.js Pod",
     command: "kubectl exec -it $(kubectl get pod -l app=node-api -o jsonpath='{.items[0].metadata.name}') -- node -e \"const { Pool } = require('pg'); const p = new Pool({ connectionString: process.env.DATABASE_URL }); p.query('SELECT NOW()').then(r => { console.log(r.rows[0]); p.end(); });\"",
     searchTerms: "exec node postgres pg pool connect query test DATABASE_URL end-to-end",
@@ -82,7 +65,7 @@ window.commandData = [
   },
 
   {
-    id: 505, section: "apps", sectionTitle: "Sample Applications",
+    id: 504, section: "apps", sectionTitle: "Sample Applications",
     commandTitle: "Run a psql Session Against Postgres",
     command: "kubectl run -it --rm postgres-client --image=postgres:15-alpine --restart=Never -- psql -h postgres -U appuser -d appdb",
     searchTerms: "psql run client interactive postgres kubectl temporary pod query",

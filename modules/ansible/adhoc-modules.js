@@ -1,4 +1,4 @@
-// modules/m4/adhoc-modules.js
+// modules/ansible/adhoc-modules.js
 // M4: Ansible — Ad-hoc Commands & Modules
 // Extracted from DOB-M4-Practice-Files M4-1 / M4-2/4 (ad-hoc runs, command vs shell, modules)
 

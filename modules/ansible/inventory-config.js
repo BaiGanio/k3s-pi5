@@ -1,4 +1,4 @@
-// modules/m4/inventory-config.js
+// modules/ansible/inventory-config.js
 // M4: Ansible — Inventory & Configuration
 // Extracted from DOB-M4-Practice-Files M4-2 (inventory, group_vars/host_vars, ansible.cfg)
 

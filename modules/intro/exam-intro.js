@@ -1,6 +1,6 @@
-// modules/m1/exam-m1.js
-// M1 Exam — Introduction to DevOps & Vagrant.
-// Derived from the existing M1 modules (devops-intro, vagrant-parallels,
+// modules/intro/exam-intro.js
+// Intro Exam — Introduction to DevOps & Vagrant.
+// Derived from the existing intro modules (devops-intro, vagrant-parallels,
 // practice-vagrant-docker) and adapted to the project's platform — Apple Silicon
 // with the Parallels provider and the native ARM64 Ubuntu box. pageBlocks format.
 
@@ -12,7 +12,7 @@ window.pageBlocks = [
     title: 'About this exam',
     content: `
       <p>
-        This exam consolidates <strong>Module 1 — Introduction to DevOps</strong> into one
+        This exam consolidates <strong>Intro — Introduction to DevOps</strong> into one
         end-to-end exercise: describe a server entirely in code, conjure it into existence with a
         single command, provision it automatically, and tear it down without fear. By the end you
         will have built a reproducible Vagrant environment on Apple Silicon — the foundation every
@@ -59,37 +59,37 @@ window.pageBlocks = [
         commandTitle: 'Verify Vagrant is installed',
         command: 'vagrant --version',
         searchTerms: 'vagrant version install verify check homebrew',
-        description: 'Confirms the Vagrant CLI is on your PATH and prints its version. If this errors, install Vagrant first (e.g. <code>brew install --cask vagrant</code>) along with Parallels Desktop Pro.',
+        description: 'Confirms the Vagrant CLI is on your PATH and prints its version. If this errors, install Vagrant first (e.g. <code>brew install --cask vagrant</code>) along with the <code>vagrant-parallels</code> plugin.',
         parts: [
-          { text: 'vagrant --version', explanation: 'prints the installed Vagrant version — the quickest install smoke test' },
+          { text: 'vagrant --version', explanation: 'prints the installed Vagrant version — any 2.x version is current enough for this exam' },
         ],
-        example: 'Vagrant 2.4.x',
-        why: 'Everything in this exam runs through the <code>vagrant</code> CLI. Confirming it is present avoids chasing "command not found" errors mid-exercise.',
+        example: 'Vagrant 2.4.3',
+        why: 'First: confirm the tool is on your machine. Without Vagrant, nothing else in this exam can happen.',
       },
       {
         id: 2,
         commandTitle: 'Install the Parallels provider plugin',
-        command: 'vagrant plugin install vagrant-parallels && vagrant plugin list',
-        searchTerms: 'vagrant plugin install parallels provider apple silicon list arm64',
-        description: 'Installs the <code>vagrant-parallels</code> plugin so Vagrant can drive Parallels Desktop, then lists installed plugins to confirm it registered.',
+        command: 'vagrant plugin install vagrant-parallels',
+        searchTerms: 'vagrant plugin install parallels provider arm64 apple silicon',
+        description: 'Installs the <code>vagrant-parallels</code> plugin — the bridge between Vagrant and the Parallels hypervisor API. On Apple Silicon this is required because the default VirtualBox provider does not run.',
         parts: [
-          { text: 'vagrant plugin install vagrant-parallels', explanation: 'adds the Parallels provider — required on Apple Silicon, where VirtualBox is unavailable' },
-          { text: 'vagrant plugin list', explanation: 'shows installed plugins and versions so you can confirm the install succeeded' },
+          { text: 'vagrant plugin install', explanation: 'downloads and installs a Vagrant plugin from RubyGems' },
+          { text: 'vagrant-parallels', explanation: 'the official Parallels provider plugin — maintained by Parallels, installed once per machine' },
         ],
-        example: 'Installing the \'vagrant-parallels\' plugin. This can take a few minutes...\nInstalled the plugin \'vagrant-parallels (2.4.x)\'!\n\nvagrant-parallels (2.4.x, global)',
-        why: 'Without a working provider plugin, <code>vagrant up</code> has nothing to talk to. The plugin is what bridges Vagrant\'s declarative file to a real Parallels VM.',
+        example: 'Installing the \'vagrant-parallels\' plugin. This can take a few minutes...\nInstalled the plugin \'vagrant-parallels (3.1.x)\'!',
+        why: 'No plugin, no VM. VirtualBox does not have a production-ready ARM64 port, so Parallels is the path for Apple Silicon users.',
       },
       {
         id: 3,
         commandTitle: 'Set Parallels as the default provider',
         command: 'export VAGRANT_DEFAULT_PROVIDER=parallels',
-        searchTerms: 'vagrant default provider environment variable parallels export shell profile',
-        description: 'Sets an environment variable so Vagrant uses Parallels without an explicit <code>--provider</code> flag. Add this line to your <code>~/.zshrc</code> to make it permanent.',
+        searchTerms: 'vagrant default provider parallels env var export',
+        description: 'Sets the <code>VAGRANT_DEFAULT_PROVIDER</code> environment variable so you never need to type <code>--provider parallels</code> on subsequent <code>vagrant up</code> commands. Add this to your <code>~/.zshrc</code> or <code>~/.bashrc</code> to make it permanent.',
         parts: [
-          { text: 'export VAGRANT_DEFAULT_PROVIDER=parallels', explanation: 'tells every vagrant command in this shell to default to the Parallels provider' },
+          { text: 'export VAGRANT_DEFAULT_PROVIDER=parallels', explanation: 'tells Vagrant to use Parallels unless --provider overrides it' },
         ],
-        example: '$ vagrant up        # now uses Parallels automatically, no --provider needed',
-        why: 'On Apple Silicon, forgetting <code>--provider parallels</code> makes Vagrant fall back to VirtualBox and fail immediately. Setting the default removes that whole class of error.',
+        example: '$ echo "export VAGRANT_DEFAULT_PROVIDER=parallels" >> ~/.zshrc && source ~/.zshrc',
+        why: 'Saves keystrokes and eliminates the class of bugs where you forget --provider, Vagrant defaults to VirtualBox, and it errors immediately.',
       },
     ],
   },
@@ -102,10 +102,9 @@ window.pageBlocks = [
     title: 'Part B — Author a Vagrantfile',
     content: `
       <p>
-        The <code>Vagrantfile</code> is the single declarative source of truth for a VM — its OS image,
-        CPU/RAM, network, port forwarding, and which provisioner to run. Anyone who has this file can
-        reproduce the exact same machine with one command. That reproducibility is the whole point of
-        Infrastructure as Code.
+        The Vagrantfile is the declarative source of truth for a VM. It names the box (OS image),
+        sets resources, wires networking (private IP + port forwarding), and declares what
+        provisioner to run. From this single file anyone can reproduce the same environment.
       </p>
     `,
   },
@@ -116,23 +115,22 @@ window.pageBlocks = [
     items: [
       {
         id: 101,
-        commandTitle: 'Create the project folder',
-        command: 'mkdir dob-docker && cd dob-docker',
-        searchTerms: 'mkdir cd project folder vagrant isolated state',
-        description: 'Each Vagrant project lives in its own folder, which holds the <code>Vagrantfile</code>, the provisioner, and Vagrant\'s <code>.vagrant/</code> state directory. Run every command from here.',
+        commandTitle: 'Create a project folder',
+        command: 'mkdir dobdocker && cd dobdocker',
+        searchTerms: 'mkdir cd project folder vagrant init',
+        description: 'Creates a dedicated folder for this exam. Every Vagrant project lives in its own folder — the Vagrantfile and the <code>.vagrant/</code> state directory both go here.',
         parts: [
-          { text: 'mkdir dob-docker', explanation: 'a dedicated folder isolates this VM\'s state from other projects' },
-          { text: 'cd dob-docker', explanation: 'all vagrant commands act on the Vagrantfile in the current directory' },
+          { text: 'mkdir dobdocker && cd dobdocker', explanation: 'creates and enters the project folder — all vagrant commands from here operate on the Vagrantfile in this directory' },
         ],
-        example: '$ mkdir dob-docker && cd dob-docker\n$ pwd\n/Users/you/dob-docker',
-        why: 'An empty folder makes the next steps unambiguous — no stale Vagrantfile, .vagrant/ state, or cached box to conflict with.',
+        example: '$ pwd\n/Users/you/dobdocker',
+        why: 'Clean isolation: no existing Vagrantfile, no .vagrant/ state from other projects, no box conflicts.',
       },
       {
         id: 102,
-        commandTitle: 'Write the Vagrantfile',
-        command: 'cat Vagrantfile',
-        searchTerms: 'vagrantfile define box parallels private network forwarded port provision shell arm64 ubuntu memory cpus',
-        description: 'Create a file named <code>Vagrantfile</code> and paste the content below. It declares one VM, <code>dob-docker</code>, on the native ARM64 Ubuntu box, gives it a static private-network IP and a forwarded port, sizes it on Parallels, and points the shell provisioner at <code>dobdocker.sh</code>.',
+        commandTitle: 'Write the Vagrantfile and provisioner',
+        command: 'cat Vagrantfile && cat dobdocker.sh',
+        searchTerms: 'vagrantfile complete dobdocker vm define box parallels provision shell script',
+        description: 'Create two files: <code>Vagrantfile</code> that declares the VM and <code>dobdocker.sh</code> that the shell provisioner runs on first boot. The Vagrantfile pins the native ARM64 Ubuntu box, assigns a static private IP and port forward, and points the provisioner at <code>dobdocker.sh</code>.',
         parts: [
           { text: 'config.vm.define "dobdocker"', explanation: 'names the VM — Vagrant uses this identifier for up/ssh/halt/destroy' },
           { text: 'dobdocker.vm.box = "bento/ubuntu-24.04-arm64"', explanation: 'the native ARM64 Ubuntu 24.04 box — runs at full speed on Apple Silicon' },
@@ -244,105 +242,88 @@ end`,
         commandTitle: 'Reload after a config change',
         command: 'vagrant reload --provision',
         searchTerms: 'vagrant reload restart reboot apply vagrantfile change provision again',
-        description: 'Reboots the VM and re-reads the Vagrantfile — the way to apply changes to networking, ports, or resources without destroying the machine. <code>--provision</code> re-runs the provisioner too.',
+        description: 'Reboots the VM and re-reads the Vagrantfile — the way to apply changes to networking, ports, or resources without destroying the VM. Adding <code>--provision</code> also re-runs the provisioner.',
         parts: [
-          { text: 'vagrant reload', explanation: 'halts then boots the VM, re-applying the current Vagrantfile (memory, networks, ports)' },
-          { text: '--provision', explanation: 'forces the provisioner to run again on this boot (it normally runs only on first up)' },
+          { text: 'vagrant reload', explanation: 'gracefully reboots the VM and applies any Vagrantfile changes (new ports, IPs, resources)' },
+          { text: '--provision', explanation: 're-runs the shell provisioner after reboot — use when you have changed dobdocker.sh' },
         ],
-        example: '==> dobdocker: Attempting graceful shutdown of VM...\n==> dobdocker: Booting VM...\n==> dobdocker: Running provisioner: shell...',
-        why: 'Not every Vagrantfile change needs a full destroy/rebuild. <code>reload</code> applies machine-level changes while keeping the disk and its data.',
+        example: "==> dobdocker: Attempting graceful shutdown of VM...\n==> dobdocker: Booting VM...\n==> dobdocker: Running provisioner: shell...",
+        why: 'Use reload when you change the Vagrantfile and want the VM to pick up new ports or IPs. Use reload --provision when you have updated the provisioner script and want it re-applied.',
       },
       {
         id: 205,
-        commandTitle: 'Pause the VM (keeps everything)',
+        commandTitle: 'Halt (stop) the VM',
         command: 'vagrant halt',
-        searchTerms: 'vagrant halt stop shutdown pause keep state disk resume',
-        description: 'Gracefully shuts the VM down while keeping its disk. Bring it back with <code>vagrant up</code> — everything you installed is still there, and the boot is fast because no provisioning re-runs.',
+        searchTerms: 'vagrant halt stop shutdown pause power off',
+        description: 'Gracefully shuts down the VM while keeping its virtual disk. Use at the end of the day to free RAM and CPU on your Mac.',
         parts: [
-          { text: 'vagrant halt', explanation: 'sends an ACPI shutdown to the guest, preserving the virtual disk' },
+          { text: 'vagrant halt', explanation: 'sends an ACPI shutdown to the guest OS — preserves the disk' },
         ],
         example: '==> dobdocker: Attempting graceful shutdown of VM...',
-        why: 'Use halt when you are done for the day but want to resume quickly — it frees RAM and CPU without throwing away the VM.',
+        why: 'After a halt, vagrant up boots the VM fast — no provisioning, no box download. The VM is just paused.',
       },
       {
         id: 206,
-        commandTitle: 'Destroy the VM (start over clean)',
+        commandTitle: 'Destroy the VM (clean reset)',
         command: 'vagrant destroy -f',
-        searchTerms: 'vagrant destroy delete remove vm disk fresh clean disposable reproducible cattle',
-        description: 'Permanently deletes the VM and its virtual disk. The Vagrantfile and provisioner are untouched, so <code>vagrant up</code> rebuilds an identical VM from scratch (the box stays cached, so no re-download).',
+        searchTerms: 'vagrant destroy delete remove vm disk clean reset force',
+        description: 'Permanently deletes the VM and its disk. The Vagrantfile and provisioner are untouched, so <code>vagrant up</code> rebuilds an identical VM.',
         parts: [
           { text: 'vagrant destroy', explanation: 'stops and deletes the VM and all its disks' },
           { text: '-f', explanation: 'skips the confirmation prompt' },
         ],
         example: '==> dobdocker: Forcing shutdown of VM...\n==> dobdocker: Deleting the machine...',
-        why: 'Being able to throw the VM away and recreate it identically is the payoff of the declarative approach — servers are cattle, not pets. <code>destroy</code> is freedom, not fear.',
+        why: 'The VM is disposable — the Vagrantfile is the artifact. Destroy is freedom: if the VM is broken, throw it away and build a fresh one in minutes.',
       },
     ],
   },
 
   // ════════════════════════════════════════════════════════════════════════════
-  // PART D — PROVISIONING
+  // PART D — PROVISION AUTOMATICALLY
   // ════════════════════════════════════════════════════════════════════════════
   {
     type: 'prose',
-    title: 'Part D — Provision automatically',
+    title: 'Part D — Provision Docker automatically',
     content: `
       <p>
-        A server you set up by hand is a server nobody can reproduce. The provisioner captures the
-        install steps in a script that Vagrant runs as <strong>root</strong> on first boot — turning
-        "I think I installed Docker like this" into an exact, repeatable recipe. Here the provisioner
-        installs Docker Engine from Docker's official APT repository.
+        The <code>Vagrantfile</code> from Part B already points at <code>dobdocker.sh</code>.
+        That script runs once — on first <code>vagrant up</code> — and installs Docker Engine
+        from the official Docker apt repository. This part verifies the provisioner did its job.
       </p>
     `,
   },
   {
     type: 'commands',
     section: 'provision',
-    sectionTitle: 'Part D — Shell provisioner',
+    sectionTitle: 'Part D — Provisioner script',
     items: [
       {
         id: 301,
-        commandTitle: 'Write the dobdocker.sh provisioner',
+        commandTitle: 'The dobdocker.sh provisioner',
         command: 'cat dobdocker.sh',
-        searchTerms: 'provision shell script install docker engine apt ubuntu gpg key repository usermod group set -e',
-        description: 'Create <code>dobdocker.sh</code> next to the Vagrantfile. Vagrant runs it as root on first boot: it adds Docker\'s official APT repo, installs Docker Engine, enables the service, and adds the <code>vagrant</code> user to the <code>docker</code> group.',
+        searchTerms: 'dobdocker.sh shell provisioner docker install apt script',
+        description: 'The shell provisioner — runs as root inside the VM. It adds the Docker apt repository for ARM64, installs Docker Engine, enables and starts the daemon, and adds the vagrant user to the docker group.',
         parts: [
-          { text: 'set -e', explanation: 'aborts the whole script if any command fails, so a half-installed VM surfaces immediately' },
-          { text: 'apt-get install ... ca-certificates curl gnupg', explanation: 'prerequisites for fetching and verifying the Docker repository signing key' },
-          { text: 'gpg --dearmor -o /etc/apt/keyrings/docker.gpg', explanation: "stores Docker's signing key so apt can verify the packages are authentic" },
-          { text: 'deb [arch=arm64 ...]', explanation: 'pins the repo to the ARM64 packages — matching the native architecture of the VM' },
-          { text: 'docker-ce docker-ce-cli containerd.io ...', explanation: 'the Engine, CLI, container runtime, and the buildx/compose plugins' },
+          { text: 'set -e', explanation: 'exits on first error — no partial installs that appear to succeed' },
+          { text: 'curl -fsSL https://download.docker.com/...', explanation: 'adds the official Docker apt repo, pinned to arm64 architecture' },
+          { text: 'apt-get install -y docker-ce docker-ce-cli ...', explanation: 'installs the full Docker Engine stack' },
           { text: 'usermod -aG docker vagrant', explanation: 'lets the vagrant user run docker without sudo (takes effect on next login)' },
         ],
         example: `#!/bin/bash
-# Provisioner runs as root via Vagrant's shell provisioner — no sudo needed.
 set -e
-
-echo "* Install prerequisites ..."
-export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y ca-certificates curl gnupg
-
-echo "* Add Docker's official GPG key ..."
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 chmod a+r /etc/apt/keyrings/docker.gpg
-
-echo "* Add Docker repository (arm64) ..."
 echo \\
   "deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \\
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \\
   > /etc/apt/sources.list.d/docker.list
-
-echo "* Install Docker Engine ..."
 apt-get update -y
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-echo "* Enable and start Docker ..."
 systemctl enable docker
 systemctl start docker
-
-echo "* Add vagrant user to docker group ..."
 usermod -aG docker vagrant`,
         why: 'Putting install steps in a provisioner — rather than typing them after <code>vagrant up</code> — means the VM is identical every time you create it. Destroy it, recreate it, and Docker is back exactly as configured.',
       },

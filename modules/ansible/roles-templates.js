@@ -1,4 +1,4 @@
-// modules/m4/roles-templates.js
+// modules/ansible/roles-templates.js
 // M4: Ansible — Roles, Templates, Galaxy & Advanced Techniques
 // Extracted from DOB-M4-Practice-Files M4-3 (roles, templates, register/debug, when)
 

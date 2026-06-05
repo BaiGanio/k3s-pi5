@@ -37,10 +37,10 @@ baseline: a Node.js web app and a database stood up by hand on VMs (the DOB-WEB 
 pattern), so you feel the toil that every later tool exists to remove.
 
 ### Modules that cover it
-- `m1-devops-intro` — what DevOps is, and the manual VM deploy baseline.
-- `m1-vagrant-parallels` / `m1-vagrant-vmware` — two-VM labs on Apple Silicon, two hypervisors.
-- `m1-practice-vagrant-docker` — a hands-on lab: provision a Vagrant VM and install Docker on it.
-- `m1-exam` — author a Vagrantfile, drive the VM lifecycle, multi-machine provisioning.
+- `intro-devops-intro` — what DevOps is, and the manual VM deploy baseline.
+- `intro-vagrant-parallels` / `intro-vagrant-vmware` — two-VM labs on Apple Silicon, two hypervisors.
+- `intro-practice-vagrant-docker` — a hands-on lab: provision a Vagrant VM and install Docker on it.
+- `intro-exam` — author a Vagrantfile, drive the VM lifecycle, multi-machine provisioning.
 
 ### Hands-on milestones
 1. `vagrant up` brings two ARM64 VMs to life; `vagrant ssh` into each works.
@@ -63,13 +63,14 @@ same way, every time." Crucially, the playbooks deploy the *real* apps: ASP.NET 
 and Node.js/Express on Ubuntu, each as a managed `systemd` service, each backed by PostgreSQL.
 
 ### Modules that cover it
-- `m4-ansible-intro` — architecture, components, install (still operating on the Phase 1 VMs).
-- `m4-inventory-config` — inventories, groups, `group_vars`/`host_vars` precedence, `ansible.cfg`.
-- `m4-adhoc-modules` — `command` vs `shell`, the `script` module, `ansible-doc`, package/service modules.
-- `m4-playbooks-dotnet` — publish & copy a .NET 8 app, wire a `systemd` unit, syntax-check, retry files.
-- `m4-playbooks-nodejs` — NodeSource, `npm ci`, `systemd`, tags for fast partial deploys.
-- `m4-roles-templates` — role structure, `ansible-galaxy`, Jinja2 templates, `when`/facts, handlers.
-- `m4-homework` — the capstone of this stop: a two-host heterogeneous deploy (.NET *and* Node + Postgres) using roles, facts, and idempotence.
+- `ansible-intro` — architecture, components, install (still operating on the Phase 1 VMs).
+- `ansible-inventory-config` — inventories, groups, `group_vars`/`host_vars` precedence, `ansible.cfg`.
+- `ansible-adhoc-modules` — `command` vs `shell`, the `script` module, `ansible-doc`, package/service modules.
+- `ansible-playbooks-dotnet` — publish & copy a .NET 8 app, wire a `systemd` unit, syntax-check, retry files.
+- `ansible-playbooks-nodejs` — NodeSource, `npm ci`, `systemd`, tags for fast partial deploys.
+- `ansible-roles-templates` — role structure, `ansible-galaxy`, Jinja2 templates, `when`/facts, handlers.
+- `ansible-practice-lab` — the authentic DOB file-for-file lab: Vagrant fleet, ad-hoc → inventory → playbooks → roles (Apache + MariaDB), with a WinRM finale.
+- `ansible-homework` — the capstone of this stop: a two-host heterogeneous deploy (.NET *and* Node + Postgres) using roles, facts, and idempotence.
 
 ### Hands-on milestones
 1. `ansible -m ping all` is green across every VM in the inventory.
@@ -118,7 +119,7 @@ Before walking on to the cluster, confirm:
 
 - [ ] You can rebuild the entire VM lab from a `Vagrantfile` and an Ansible run, from zero, hands-off.
 - [ ] The Rick & Morty app runs three ways now: by-hand on VMs, Ansible-provisioned, and in Docker — and you can explain the trade-offs of each out loud.
-- [ ] Every module in groups M1, M4 (Ansible), and M2 is `ready: true` with its exam/homework intact.
+- [ ] Every module in groups intro, Ansible, and M2 is `ready: true` with its exam/homework intact.
 - [ ] Nothing in this phase cost money beyond the hardware already on the desk.
 
 If any box is unchecked, stay at this altitude another few evenings rather than carrying gaps

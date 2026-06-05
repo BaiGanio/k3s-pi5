@@ -1,4 +1,4 @@
-// modules/m4/practice-ansible-lab.js
+// modules/ansible/practice-ansible-lab.js
 // Practice lab for the Ansible track — the original DOB-M4 hands-on practice,
 // presented faithfully (CentOS/Ubuntu VMs, Apache + MariaDB, real lab files).
 // Source: 4/Practice-M4-Ansible.md + 4/DOB-M4-Practice-Files/{M4-1,M4-2,M4-3}
@@ -45,7 +45,7 @@ window.pageBlocks = [
   {
     type: 'note',
     variant: 'info',
-    content: 'The original setup assumes a <strong>Linux control node</strong> (CentOS 7) with <strong>VirtualBox + Vagrant</strong>, and the lab archive unpacked into <code>~/DOB/M4</code>. The real files live under <code>4/DOB-M4-Practice-Files/</code> in this repo. Install Ansible on the control node first — RHEL/CentOS: <code>sudo yum install epel-release &amp;&amp; sudo yum install ansible</code>; Debian/Ubuntu: <code>sudo apt-add-repository ppa:ansible/ansible &amp;&amp; sudo apt update &amp;&amp; sudo apt install ansible</code>.',
+    content: 'The original setup assumes a <strong>Linux control node</strong> (CentOS 7) with <strong>VirtualBox + Vagrant</strong>, and the lab archive unpacked into <code>~/DOB/M4</code>. Recreate the files shown below as you work through each step. Install Ansible on the control node first — RHEL/CentOS: <code>sudo yum install epel-release &amp;&amp; sudo yum install ansible</code>; Debian/Ubuntu: <code>sudo apt-add-repository ppa:ansible/ansible &amp;&amp; sudo apt update &amp;&amp; sudo apt install ansible</code>.',
   },
 
   // ════════════════════════════════════════════════════════════════════════════
