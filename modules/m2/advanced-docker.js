@@ -1,5 +1,8 @@
 // modules/m2-advanced-docker.js
 // M2: Containers
+// Lab companion: labs/docker/2-nginx-layers/
+//   Compare nginx-1/Dockerfile (2 RUN layers) vs nginx-2/Dockerfile (1 RUN layer).
+//   Build both and check `docker history` to see the layer count difference.
 
 window.commandData = [
 

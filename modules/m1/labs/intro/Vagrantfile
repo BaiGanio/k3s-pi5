@@ -1,0 +1,21 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  config.ssh.insert_key = false
+
+  config.vm.define "dobdocker" do |dobdocker|
+    dobdocker.vm.box="shekeriev/centos-7-64-minimal"
+    dobdocker.vm.hostname = "dob-docker.sulab.local"
+    dobdocker.vm.network "private_network", ip: "192.168.81.100"
+    dobdocker.vm.network "forwarded_port", guest: 8080, host: 8080, auto_correct: true
+    dobdocker.vm.synced_folder "vagrant/docker/", "/vagrant"
+    dobdocker.vm.provision "shell", path: "dobdocker.sh"
+    dobdocker.vm.provider :virtualbox do |vb|
+        vb.customize ["modifyvm", :id, "--memory", "2048"]
+        vb.customize ["modifyvm", :id, "--cpus", "2"]
+    end
+  end
+
+end

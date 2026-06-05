@@ -209,6 +209,20 @@ end`,
     `,
   },
 
+  // ── Lab Companion ───────────────────────────────────────────────────────────
+
+  {
+    type: 'note',
+    variant: 'info',
+    content: `
+      <strong>🛠️ Lab companion: <code>labs/vms/1-vagrant-docker/</code></strong>
+      <br>A complete Vagrantfile + shell provisioner that spins up a CentOS 7 VM
+      with Docker CE. Run <code>vagrant up</code> from that directory and follow
+      the bootstrap in real time — this is the lab that the Vagrant command
+      reference above was built from.
+    `,
+  },
+
   // ── Why VMs Over Containers for Learning ─────────────────────────────────
 
   {

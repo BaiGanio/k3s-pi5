@@ -447,6 +447,9 @@ window.commandData = [
   },
 
   // ── Part 6: Build Images from Dockerfiles ────────────────────────────────
+  // Lab companions:
+  //   labs/docker/1-hello-world/     — first Dockerfile (busybox + custom script)
+  //   labs/docker/3-entrypoint-cmd/  — ENTRYPOINT vs CMD demo (ping example)
 
   {
     id: 601,
