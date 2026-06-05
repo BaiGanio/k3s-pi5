@@ -1,4 +1,4 @@
-// modules/m3/docker-swarm-dotnet.js
+// modules/m2/docker-swarm-dotnet.js
 // M3: Advanced Docker — .NET Swarm
 // Extracted from DOB-M3-Practice-Files M3-3 (PHP Swarm stack → .NET 8 + PostgreSQL)
 

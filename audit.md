@@ -228,79 +228,76 @@ The original M3 materials use MySQL (`mysql:5.7`). Both proposed modules use Pos
 - [x] Inventory m3/ source material
 - [x] Gap analysis against existing modules
 - [x] Propose extractions with .NET/Node.js stack alignment
-- [ ] Mark `m2-advanced-docker` as `ready: true` in `lib/registry.js` (content is complete)
+- [x] Mark `m2-advanced-docker` as `ready: true` in `lib/registry.js` (content is complete)
+
+> **Placement decision (final):** the .NET Compose/Swarm/Homework modules were
+> **merged into the existing "Standalone Containers" (`m2`) group** next to
+> `m2-advanced-docker` — *not* a separate "M3 — Advanced Docker (.NET)" group.
+> Rationale: same topic as the existing (Node.js) advanced-Docker module, keeps the
+> curriculum order (single containers → Compose/Swarm → Kubernetes), and avoids
+> colliding with the k3s group which also uses the `m3-*` id/folder space.
+> Modules were renamed `m3-* → m2-*` and moved `modules/m3/ → modules/m2/`.
 
 ### Phase 2 — .NET Compose Module
 
-- [ ] Create `modules/m3/docker-compose-dotnet.js`
-- [ ] Register in `lib/registry.js` under a new group: "M3 — Advanced Docker (.NET)"
-- [ ] Include: docker-compose.yml, Dockerfile, build, up, ps, logs, down
-- [ ] All examples use .NET 8 Minimal API + PostgreSQL
+- [x] Create `modules/m2/docker-compose-dotnet.js`
+- [x] Register in `lib/registry.js` inside the "Standalone Containers" group
+- [x] Include: docker-compose.yml, Dockerfile, build, up, ps, logs, down
+- [x] All examples use .NET 8 Minimal API + PostgreSQL
 
 ### Phase 3 — .NET Swarm Module
 
-- [ ] Create `modules/m3/docker-swarm-dotnet.js`
-- [ ] Register in `lib/registry.js`
-- [ ] Include: swarm init, join, node ls, service create/scale/update, stack deploy
-- [ ] All service examples use .NET 8 Web API images
+- [x] Create `modules/m2/docker-swarm-dotnet.js`
+- [x] Register in `lib/registry.js`
+- [x] Include: swarm init, join, node ls, service create/scale/update, stack deploy
+- [x] All service examples use .NET 8 Web API images
 
 ### Phase 4 — Practice Files Migration
 
-- [ ] Create `m3/DOB-M3-Practice-Files/M3-2a-dotnet/` — .NET Dockerfile + source
-- [ ] Create `m3/DOB-M3-Practice-Files/M3-2b-dotnet/` — .NET docker-compose.yml
-- [ ] Create `m3/DOB-M3-Practice-Files/M3-3-dotnet/` — .NET Swarm stack compose file
-- [ ] Keep original PHP+MySQL files for reference (rename with `-php` suffix if needed)
+- [x] Create `m3/DOB-M3-Practice-Files/M3-2a-dotnet/` — .NET Dockerfile + source
+- [x] Create `m3/DOB-M3-Practice-Files/M3-2b-dotnet/` — .NET docker-compose.yml
+- [x] Create `m3/DOB-M3-Practice-Files/M3-3-dotnet/` — .NET Swarm stack compose file
+- [x] Original PHP+MySQL files kept in place for reference (alongside the `-dotnet` variants)
 
 ### Phase 5 — Homework Module
 
-- [ ] Create `modules/m3/homework-m3.js`
-- [ ] Register in `lib/registry.js`
-- [ ] Include: Vagrantfile for 3-node Swarm, .NET docker-compose.yml, deployment instructions
+- [x] Create `modules/m2/homework-m3.js`
+- [x] Register in `lib/registry.js`
+- [x] Include: Vagrantfile for 3-node Swarm, .NET docker-compose.yml, deployment instructions
 
 ---
 
-## 6. Registry Changes Needed
+## 6. Registry Changes (as implemented)
 
-Add a new group to `lib/registry.js`:
+The three .NET modules were added **inside the existing "Standalone Containers"
+group**, right after `m2-advanced-docker` (no new group was created):
 
 ```js
 {
-  group: "M3 — Advanced Docker (.NET)",
-  icon: "📦",
-  modules: [
-    {
-      id: "m3-docker-compose-dotnet",
-      title: ".NET Docker Compose",
-      subtitle: ".NET 8 Web API + PostgreSQL multi-container setup",
-      script: "modules/m3/docker-compose-dotnet.js",
-      ready: true,
-    },
-    {
-      id: "m3-docker-swarm-dotnet",
-      title: ".NET Docker Swarm",
-      subtitle: "Deploy .NET services across a 3-node Swarm cluster",
-      script: "modules/m3/docker-swarm-dotnet.js",
-      ready: true,
-    },
-    {
-      id: "m3-homework",
-      title: "Homework M3 — .NET Swarm Deployment",
-      subtitle: "Vagrantfile + docker-compose + Swarm cluster exercise",
-      script: "modules/m3/homework-m3.js",
-      ready: true,
-    },
-  ],
+  id: "m2-docker-compose-dotnet",
+  title: ".NET Docker Compose",
+  subtitle: ".NET 8 Web API + PostgreSQL multi-container setup",
+  sidebarSubtitle: "Compose with a .NET stack",
+  script: "modules/m2/docker-compose-dotnet.js",
+  ready: true,
+},
+{
+  id: "m2-docker-swarm-dotnet",
+  title: ".NET Docker Swarm",
+  subtitle: "Deploy .NET services across a 3-node Swarm cluster",
+  sidebarSubtitle: "Swarm with a .NET stack",
+  script: "modules/m2/docker-swarm-dotnet.js",
+  ready: true,
+},
+{
+  id: "m2-homework",
+  title: "Homework M3 — .NET Swarm Deployment",
+  subtitle: "Vagrantfile + docker-compose + Swarm cluster exercise",
+  sidebarTitle: "Homework — .NET Swarm",
+  sidebarSubtitle: "Vagrant + Compose + Swarm",
+  script: "modules/m2/homework-m3.js",
+  ready: true,
 },
 ```
 
-Also update `m2-advanced-docker`:
-```js
-{
-  id: "m2-advanced-docker",
-  title: "Advanced Docker",
-  subtitle: "docker-machine · Networking · Volumes · Compose · Swarm (Node.js stack)",
-  script: "modules/m2/advanced-docker.js",
-  ready: true,  // ← change from false to true
-  lab: "labs/docker/2-nginx-layers/",
-},
-```
+`m2-advanced-docker` was already marked `ready: true` (Phase 1).

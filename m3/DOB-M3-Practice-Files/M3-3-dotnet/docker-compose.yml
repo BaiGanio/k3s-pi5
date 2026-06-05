@@ -1,0 +1,48 @@
+# docker-compose.yml — .NET 8 stack for Docker Swarm
+# .NET equivalent of the original M3-3 PHP+MySQL Swarm stack.
+#
+# Swarm cannot build images, so both images must be pre-built and reachable on every
+# node — push them to a registry (Docker Hub / GHCR), or build on each node:
+#   docker build -t dotnet-api:latest ../M3-2b-dotnet/api
+#   docker build -t dotnet-db:latest  ../M3-2b-dotnet/db
+version: '3.8'
+
+services:
+  swrm-api:
+    image: dotnet-api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      ConnectionStrings__Default: "Host=swrm-db;Database=weatherapp;Username=postgres;Password=secret"
+    networks:
+      - swrm-network
+    depends_on:
+      - swrm-db
+    deploy:
+      replicas: 5
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  swrm-db:
+    image: dotnet-db:latest
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: weatherapp
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - swrm-network
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker   # pin the DB (and its node-local volume) to one worker
+
+networks:
+  swrm-network:
+    driver: overlay   # spans all Swarm nodes — bridge only works on a single host
+
+volumes:
+  pg-data:

@@ -1,4 +1,4 @@
-// modules/m3/homework-m3.js
+// modules/m2/homework-m3.js
 // M3: Advanced Docker — Homework
 // Original assignment: Vagrantfile for 3-node Swarm + docker-compose (web+db, replicate ×3)
 
