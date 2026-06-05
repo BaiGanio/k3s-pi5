@@ -1,0 +1,20 @@
+---
+- hosts: grp-webservers
+  become: true
+
+  tasks:
+    - name: Install Apache HTTP Server
+      yum: name=httpd state=present
+    
+    - name: Start Apache HTTP Server and Enable it
+      service: name=httpd state=started enabled=true
+
+- hosts: grp-databases
+  become: true
+
+  tasks:
+    - name: Install MariaDB Server
+      yum: name=mariadb,mariadb-server state=present
+
+    - name: Start and enable MariaDB
+      service: name=mariadb state=started enabled=true

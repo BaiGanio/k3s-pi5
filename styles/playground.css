@@ -61,7 +61,33 @@
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-secondary);
+  margin: 0 0 0.2rem;
+}
+
+/* "Where it runs" line under each group heading on the welcome screen */
+.welcome-section-blurb {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  opacity: 0.85;
   margin: 0 0 0.75rem;
+  line-height: 1.5;
+  /* max-width: 60ch; */
+}
+
+/* Small "where it runs" chip shown on module cards and sidebar items */
+.context-chip {
+  display: inline-block;
+  /* margin-top: 0.5rem;
+  padding: 0.1rem 0.5rem; */
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent, #5b8af5);
+  /* background: rgba(91, 138, 245, 0.12);
+  border: 1px solid rgba(91, 138, 245, 0.25);
+  border-radius: 999px; */
+  white-space: nowrap;
 }
 
 /* ── Module card grid ────────────────────────────────────────────────────── */
