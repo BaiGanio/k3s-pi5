@@ -53,3 +53,27 @@
   --navbar-height:          52px;
   --sidebar-transition:     0.25s ease;
 }
+
+/* ── Dark mode ────────────────────────────────────────────────────────────── */
+html.dark {
+  --bg-app:        #1a1d23;
+  --bg-card:       #242730;
+  --bg-surface:    #2a2e38;
+  --text-primary:  #e1e4ea;
+  --text-secondary:#9ca3af;
+  --border:        #374151;
+  --accent-bg:     #1e2a4a;
+  --accent-text:   #93b4f5;
+  --shadow:        0 4px 6px -1px rgba(0,0,0,.40), 0 2px 4px -1px rgba(0,0,0,.30);
+  --code-bg:       #1e1e1e;
+}
+
+html.dark .navbar.bg-dark { background-color: #111318 !important; }
+html.dark .accordion-button:not(.collapsed) { background: #1e2a4a; color: #93b4f5; }
+html.dark .accordion-button { background: var(--bg-card); color: var(--text-primary); }
+html.dark .accordion-item { background: var(--bg-card); border-color: var(--border); }
+html.dark .form-control { background: var(--bg-surface); border-color: var(--border); color: var(--text-primary); }
+html.dark .form-control:focus { background: var(--bg-surface); color: var(--text-primary); }
+html.dark .btn-outline-secondary { color: var(--text-secondary); border-color: var(--border); }
+html.dark .btn-outline-secondary:hover { background: var(--bg-surface); color: var(--text-primary); }
+html.dark .text-secondary { color: var(--text-secondary) !important; }

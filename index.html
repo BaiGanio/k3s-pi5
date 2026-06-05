@@ -38,6 +38,9 @@
         <div id="navbar-group-links" class="d-none d-md-flex align-items-center gap-1"></div>
       </div>
       <div class="d-flex align-items-center gap-1">
+        <button id="theme-toggle" class="btn btn-sm btn-outline-secondary me-1" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <i id="theme-icon" class="bi bi-moon-fill" style="font-size:0.95rem;"></i>
+        </button>
         <a id="nav-commands" class="nav-link text-white px-2 fw-semibold" href="#" style="font-size:0.88rem;">Commands</a>
         <span class="text-secondary" style="font-size:0.8rem;">|</span>
         <a id="nav-playground" class="nav-link text-secondary px-2" href="#" style="font-size:0.88rem;">🧪
@@ -62,7 +65,7 @@
         <div id="module-header" class="mb-5" style="display:none;">
           <h1 class="fw-bold fs-2 mb-1" id="module-title"></h1>
           <p class="text-secondary mb-4" id="module-subtitle"></p>
-          <input type="text" id="searchInput" class="form-control mb-3" placeholder="Search commands or concepts…" />
+          <input type="text" id="searchInput" class="form-control mb-3" placeholder="Search commands or concepts…" aria-label="Search commands or concepts" />
           <div id="filterControls" class="d-flex flex-wrap gap-2 justify-content-center"></div>
         </div>
 

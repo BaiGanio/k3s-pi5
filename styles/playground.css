@@ -25,10 +25,37 @@
   box-shadow: 0 0 0 3px rgba(91, 138, 245, 0.18);
 }
 
+/* ── Back-to-overview breadcrumb ─────────────────────────────────────────── */
+.module-back-link {
+  font-size: 0.85rem;
+  color: var(--text-accent);
+  font-weight: 500;
+}
+.module-back-link:hover {
+  color: var(--accent-dark);
+  text-decoration: underline !important;
+}
+
 .filter-btn.active {
   background: var(--accent) !important;
   color: #fff !important;
   border-color: var(--accent) !important;
+}
+
+/* ── Filter controls ──────────────────────────────────────────────────────── */
+#filterControls {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#filterControls::-webkit-scrollbar { display: none; }
+
+@media (min-width: 769px) {
+  #filterControls {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
 /* ── No-results notice ───────────────────────────────────────────────────── */
@@ -74,19 +101,15 @@
   /* max-width: 60ch; */
 }
 
-/* Small "where it runs" chip shown on module cards and sidebar items */
+/* Small "where it runs" label — plain text, cards only */
 .context-chip {
-  display: inline-block;
-  /* margin-top: 0.5rem;
-  padding: 0.1rem 0.5rem; */
+  display: block;
+  margin-top: 0.3rem;
   font-family: var(--font-mono, monospace);
-  font-size: 0.66rem;
-  font-weight: 600;
+  font-size: 0.6rem;
+  font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--accent, #5b8af5);
-  /* background: rgba(91, 138, 245, 0.12);
-  border: 1px solid rgba(91, 138, 245, 0.25);
-  border-radius: 999px; */
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -215,6 +238,6 @@
 
 @media (max-width: 480px) {
   .welcome-grid {
-    grid-template-columns: repeat(3, 1fr); /* mobile: 1 col */
+    grid-template-columns: repeat(1, 1fr); /* mobile: 1 col */
   }
 }

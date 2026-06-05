@@ -43,6 +43,10 @@ code,
   white-space: pre-wrap;
 }
 
+/* Shell syntax highlighting inside example boxes */
+.example-box .sh-comment { color: #6a9955; }
+.example-box .sh-prompt  { color: #569cd6; font-weight: 600; }
+
 /* ── "Why" callout box ───────────────────────────────────────────────────── */
 .why-box {
   background: var(--accent-bg);
