@@ -1,4 +1,4 @@
-// modules/m2/docker-compose-dotnet.js
+// modules/docker/docker-compose-dotnet.js
 // M3: Advanced Docker — .NET Compose
 // Extracted from DOB-M3-Practice-Files M3-2a / M3-2b (PHP+MySQL → .NET 8 + PostgreSQL)
 

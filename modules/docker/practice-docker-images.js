@@ -1,6 +1,6 @@
-// modules/m2/practice-docker-images.js
+// modules/docker/practice-docker-images.js
 // Practice lab for the Standalone Containers group — build, run, and optimize images.
-// Walks the three labs in modules/m2/labs/ as filterable sections:
+// Walks the three labs in modules/docker/labs/ as filterable sections:
 //   1. hello-world   — build your first image (FROM/LABEL/ADD/CMD)
 //   2. entrypoint-cmd — ENTRYPOINT vs CMD
 //   3. nginx-layers  — image layers & the build cache
@@ -42,7 +42,7 @@ window.pageBlocks = [
       </p>
       <p>
         Each lab is deliberately tiny so the concept is the only thing in view. You will type the
-        files yourself (they also live under <code>modules/m2/labs/</code> for reference), build them,
+        files yourself (they also live under <code>modules/docker/labs/</code> for reference), build them,
         and run them — because the lesson lands when you watch the output, not when you read about it.
       </p>
     `,

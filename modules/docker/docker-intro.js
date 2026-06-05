@@ -1,4 +1,4 @@
-// modules/m2-docker-intro.js
+// modules/docker/docker-intro.js
 // M2: Containers
 
 window.commandData = [

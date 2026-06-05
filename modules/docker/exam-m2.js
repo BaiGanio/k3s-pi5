@@ -1,4 +1,4 @@
-// modules/m2/exam-m2.js
+// modules/docker/exam-m2.js
 // M2 Exam — Introduction to Docker (consolidated homework + practice).
 // Source: exam.md (Homework-M2 + Practice-M2). The original exam targets CentOS 7
 // (yum, devicemapper); this version is adapted to the project's platform —
