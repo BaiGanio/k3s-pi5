@@ -1,17 +1,58 @@
 # 👉 [https://baiganio.github.io/k3s-pi5](https://baiganio.github.io/k3s-pi5/)
 
+## Project Status
+
+> Track what's implemented and what's next. Each iteration extends the reference architecture below.  
+> **Stable content lives in the sections below this tracker — no marks, no todos, just clean reference material.**
+
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 1 | Scenario A — Direct Fetch (no cache) | ✅ Done | Passthrough proxy, zero DB dependency |
+| 2 | Scenario B — .NET Proxy + PostgreSQL Cache | ✅ Done | Cache-aside pattern, configurable TTL |
+| 3 | Scenario C — Full Sync (bulk import) | ✅ Done | Background `IHostedService`, daily cron |
+| 4 | Scenario D — Containerized on k3s | ✅ Done | Architecture mapping: VMs → Kubernetes Deployments/Services |
+| 5 | Rate limiter on .NET API | ✅ Done | Fixed-window policy, 100 req/min per IP, configurable via env vars |
+| 6 | Docker Compose quick-start | ✅ Done | Single-command local dev; `docker compose up` spins all 3 services |
+| 7 | Monitoring & backups | ✅ Done | Health checks, `pg_dump` cron, Prometheus metrics endpoint stub |
+| 8 | Curriculum mapping (k3s-pi5 modules) | ✅ Done | Table mapping README concepts → site modules |
+| 9 | CI/CD pipeline (GitHub Actions) | 🔜 Next | Build → test → push to GHCR → deploy to k3s |
+| 10 | Add Redis L1 cache layer | ⏳ Planned | Sub-millisecond cache between VM2 and VM3 |
+| 11 | Add Auth (JWT + API keys) | ⏳ Planned | Protect VM2 endpoints; VM1 sends bearer tokens |
+| 12 | Observability (Prometheus + Grafana) | ⏳ Planned | Scrape `/metrics`, build dashboards, define SLOs |
+| 13 | Infrastructure as Code (Terraform) | ⏳ Planned | Provision VMs declaratively; drift detection |
+| 14 | GitOps (ArgoCD on k3s) | ⏳ Planned | App-of-apps pattern; image updater; PR-based deployments |
+
+---
+
+## What This Repo Is
+
+This repository is the **k3s-pi5 DevOps Learning Platform** — a browser-based, self-paced curriculum that takes you from zero to running Kubernetes on a Raspberry Pi 5. The live site at [baiganio.github.io/k3s-pi5](https://baiganio.github.io/k3s-pi5/) is a progressive command reference with interactive explanations.
+
+**This README is the ground-floor reference implementation.** It walks through a complete multi-service architecture — Node.js frontend, .NET API gateway, PostgreSQL database — integrating the free, public Rick and Morty API. Every pattern established here (caching strategies, data flows, environment management, rate limiting, monitoring) recurs in later modules as the stack evolves from VMs → containers → Kubernetes → GitOps.
+
+**If you're an AI model reading this:** This file is the canonical description of the reference architecture. Use it to understand project conventions, code patterns, and what's been built vs. what's planned. The Project Status tracker above is the authoritative source of truth for iteration progress.
+
+---
+
 ## The Characters
-**Rick Sanchez** is an eccentric, hyper-intelligent scientist — arguably the smartest being in the universe. He's Morty's grandfather, an alcoholic, and a deeply nihilistic character who nonetheless shows occasional flashes of genuine love for his family. He can build interdimensional portal guns, clones, and robots out of scrap, and has died and been resurrected countless times across alternate timelines.
 
-**Morty Smith** is Rick's 14-year-old grandson — anxious, insecure, but growing in confidence over the series. He's Rick's reluctant sidekick on dangerous interdimensional adventures. His "brainwave" frequency is said to cancel out Rick's genius, making them harder to detect. Over the seasons, Morty evolves from a nervous kid into someone who's seen enough universe-scale horror to become somewhat desensitized.
+> Think of Rick as your .NET API layer — does all the heavy lifting, owns the logic, talks to the outside world. Morty is the Node.js frontend — what users actually see, anxious but functional, inseparable from Rick. PostgreSQL is the garage — where everything gets stored between adventures.
 
-Together, they're a classic "genius + everyman" duo, but with layers of trauma, love, and dark comedy underneath.
+**Rick Sanchez** — hyper-intelligent scientist, alcoholic, nihilist with hidden depth. Builds portal guns from scrap. The .NET layer.
+
+**Morty Smith** — 14-year-old grandson, anxious but increasingly competent. His brainwaves cancel out Rick's genius. The Node.js frontend.
+
+Together they're a "genius + everyman" duo, and the perfect metaphor for a backend + frontend architecture.
+
+---
 
 ## How it works?
 
-### 🛸 Rick and Morty API — Multi-VM Developer Environment
+### 🛸 Reference Implementation — Rick and Morty API Multi-Service Architecture
 
-> A practical reference for integrating the [Rick and Morty REST/GraphQL API](https://rickandmortyapi.com) across a three-VM local or cloud development setup: a **Node.js frontend**, a **.NET API layer**, and a **PostgreSQL database**. This README covers architecture, data flows, configuration scenarios, and code examples to get you up and running fast.
+> A practical, production-patterns reference for integrating the [Rick and Morty REST/GraphQL API](https://rickandmortyapi.com) across a three-service setup: a **Node.js frontend**, a **.NET API layer** (with rate limiting), and a **PostgreSQL database**. Covers VM deployment, Docker Compose local dev, Kubernetes architecture mapping, caching, sync strategies, monitoring, and CI/CD — everything you need to go from `localhost` to a production-shaped homelab.
+
+> **IP addresses shown** (192.168.1.x) are examples — replace with your LAN subnet, `hostname.local`, or Docker service names.
 
 ---
 
@@ -31,13 +72,18 @@ Together, they're a classic "genius + everyman" duo, but with layers of trauma, 
   - [Scenario A: Direct Fetch (No Cache)](#scenario-a-direct-fetch-no-cache)
   - [Scenario B: .NET Proxy with PostgreSQL Cache](#scenario-b-net-proxy-with-postgresql-cache)
   - [Scenario C: Full Sync — Bulk Import to PostgreSQL](#scenario-c-full-sync--bulk-import-to-postgresql)
+  - [Scenario D: Containerized on k3s](#scenario-d-containerized-on-k3s)
 - [Code Examples](#code-examples)
   - [Node.js — Fetch Characters](#nodejs--fetch-characters)
-  - [.NET — Proxy Controller](#net--proxy-controller)
+  - [.NET — Proxy Controller with Rate Limiting](#net--proxy-controller-with-rate-limiting)
   - [PostgreSQL — Schema](#postgresql--schema)
+- [Docker Compose Quick-Start](#docker-compose-quick-start)
 - [Environment Variables](#environment-variables)
 - [Running the Stack](#running-the-stack)
+- [Monitoring & Backups](#monitoring--backups)
+- [Where This Fits in the k3s-pi5 Curriculum](#where-this-fits-in-the-k3s-pi5-curriculum)
 - [Extending the Setup](#extending-the-setup)
+- [Resources](#resources)
 
 ---
 
@@ -78,9 +124,11 @@ This makes it an ideal API for practicing real-world multi-service integration p
 │  VM2 — .NET API  (e.g. 192.168.1.20 / api.local)       │
 │                                                         │
 │  • Proxies / enriches Rick & Morty API responses        │
+│  • Rate-limited (100 req/min per IP, configurable)      │
 │  • Handles caching logic (DB or in-memory)              │
 │  • Exposes internal REST endpoints to VM1               │
 │  • Runs scheduled sync jobs to populate VM3             │
+│  • Exposes /health and /metrics endpoints               │
 └──────────┬──────────────────────────┬───────────────────┘
            │ HTTP (internal)          │ TCP 5432
            ▼                          ▼
@@ -94,7 +142,9 @@ This makes it an ideal API for practicing real-world multi-service integration p
 └──────────────────────┘   └──────────────────────────────┘
 ```
 
-Each VM is independently deployable. The .NET layer is the central orchestrator — it decides whether to serve data from PostgreSQL cache or fetch fresh from the upstream Rick and Morty API.
+Each service is independently deployable. The .NET layer is the central orchestrator — it decides whether to serve data from PostgreSQL cache or fetch fresh from the upstream Rick and Morty API, all while enforcing rate limits to protect both itself and the upstream.
+
+**Evolution path:** VMs → Docker Compose (this README) → k3s/Kubernetes (Scenario D) → GitOps with ArgoCD (curriculum Phase 2).
 
 ---
 
@@ -127,7 +177,7 @@ NEXT_PUBLIC_APP_NAME=Rick & Morty Explorer
 
 ### VM2 — .NET API Layer
 
-**Role:** Backend API gateway. Proxies the external Rick and Morty API, applies caching, data enrichment, and business logic. Also runs background sync workers to populate the database on VM3.
+**Role:** Backend API gateway. Proxies the external Rick and Morty API, enforces rate limits, applies caching, data enrichment, and business logic. Also runs background sync workers to populate the database on VM3.
 
 | Setting | Value |
 |---|---|
@@ -143,6 +193,7 @@ dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL
 dotnet add package Microsoft.Extensions.Caching.Memory
 dotnet add package Polly                  # Resilience & retry policies
 dotnet add package Serilog.AspNetCore     # Structured logging
+# Rate limiting is built into .NET 8 — no extra package needed (System.Threading.RateLimiting)
 ```
 
 **Key environment variables:**
@@ -150,6 +201,8 @@ dotnet add package Serilog.AspNetCore     # Structured logging
 RICKMORTY_BASE_URL=https://rickandmortyapi.com/api
 ConnectionStrings__DefaultConnection=Host=192.168.1.30;Database=rickmorty;Username=app;Password=secret
 CACHE_TTL_MINUTES=60
+RATE_LIMIT_PERMIT_LIMIT=100
+RATE_LIMIT_WINDOW_SECONDS=60
 ```
 
 ---
@@ -242,12 +295,12 @@ GET https://rickandmortyapi.com/api/episode/{id}
 
 ### Scenario A: Direct Fetch (No Cache)
 
-Best for development and prototyping. VM1 calls VM2, VM2 immediately proxies to `rickandmortyapi.com` and returns the response. VM3 is not used.
+Best for development and prototyping. VM1 calls VM2, VM2 immediately proxies to `rickandmortyapi.com` and returns the response. VM3 is not used. Rate limiter still applies.
 
 ```
 VM1 (Node.js)  →  VM2 (.NET)  →  rickandmortyapi.com
-                  ↓
-               Returns JSON directly (no DB)
+                   ↓
+                Returns JSON directly (no DB)
 ```
 
 **When to use:** Local dev, low-traffic demos, when data freshness is critical.
@@ -255,6 +308,7 @@ VM1 (Node.js)  →  VM2 (.NET)  →  rickandmortyapi.com
 **VM2 .NET controller example (passthrough):**
 ```csharp
 [HttpGet("characters")]
+[EnableRateLimiting("fixed")]  // 100 req/min per IP
 public async Task<IActionResult> GetCharacters([FromQuery] int page = 1)
 {
     var url = $"{_config["RICKMORTY_BASE_URL"]}/character?page={page}";
@@ -307,6 +361,52 @@ VM1  →  VM2  →  VM3 (all reads from DB)
 
 ---
 
+### Scenario D: Containerized on k3s
+
+This is the bridge from VMs to Kubernetes. Each VM maps to a Kubernetes resource running on the k3s cluster on a Raspberry Pi 5.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    External API                         │
+│            https://rickandmortyapi.com/api              │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  k3s Cluster (Raspberry Pi 5, ARM64)                    │
+│                                                         │
+│  ┌──────────────────────┐  ┌──────────────────────────┐ │
+│  │ Deployment: dotnet-api│  │ StatefulSet: postgres   │ │
+│  │ Service: dotnet-api   │  │ Service: postgres       │ │
+│  │ Ingress → /api/*      │  │ PVC: 10Gi (SSD)         │ │
+│  │ Rate limiter enforced │  │                         │ │
+│  └──────────┬───────────┘  └───────────┬──────────────┘ │
+│             │                          │                 │
+│  ┌──────────┴──────────────────────────┴──────────────┐ │
+│  │ Deployment: node-frontend                          │ │
+│  │ Service: node-frontend                             │ │
+│  │ Ingress → / (main site)                            │ │
+│  └────────────────────────────────────────────────────┘ │
+│                                                         │
+│  Traefik Ingress Controller (built into k3s)            │
+│  cert-manager → Let's Encrypt TLS                       │
+│  Cloudflare Tunnel → public HTTPS                       │
+└─────────────────────────────────────────────────────────┘
+```
+
+| VM Concept | k3s Resource | Why |
+|---|---|---|
+| VM1 (Node.js) | `Deployment` + `Service` + `Ingress` | Stateless frontend; scale replicas horizontally |
+| VM2 (.NET API) | `Deployment` + `Service` + `Ingress` | Stateless API; rate limiter still applies per-pod |
+| VM3 (PostgreSQL) | `StatefulSet` + `Service` + `PVC` | Stateful — needs stable identity and persistent SSD storage |
+| VM port-forwarding | `Service` (ClusterIP) + `Ingress` | k8s-native service discovery replaces manual IP:port mapping |
+| `pg_hba.conf` IP restriction | `NetworkPolicy` | Restrict ingress to Postgres pods to only the API namespace |
+| Manual `dotnet run` | `Deployment` with `image:` from GHCR | Images built by CI, stored in GitHub Container Registry |
+
+**When to use:** Anything beyond local dev. This is the target architecture for the k3s-pi5 curriculum — everything from Phase 1 onward runs on this foundation.
+
+---
+
 ## Code Examples
 
 ### Node.js — Fetch Characters
@@ -334,13 +434,54 @@ module.exports = { getCharacters, getCharacterById };
 
 ---
 
-### .NET — Proxy Controller
+### .NET — Proxy Controller with Rate Limiting
 
-`vm2/Controllers/CharactersController.cs`
+**Rate limiter configuration** in `Program.cs`:
+
+```csharp
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ── Rate Limiter ────────────────────────────────────────────
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddFixedWindowLimiter(policyName: "fixed", config =>
+    {
+        config.PermitLimit = builder.Configuration.GetValue<int>("RATE_LIMIT_PERMIT_LIMIT", 100);
+        config.Window = TimeSpan.FromSeconds(
+            builder.Configuration.GetValue<int>("RATE_LIMIT_WINDOW_SECONDS", 60));
+        config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        config.QueueLimit = 0; // No queueing — reject immediately when limit hit
+    });
+
+    // Optional: stricter limit for the sync endpoint to prevent abuse
+    options.AddFixedWindowLimiter(policyName: "sync", config =>
+    {
+        config.PermitLimit = 2;
+        config.Window = TimeSpan.FromMinutes(10);
+        config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        config.QueueLimit = 0;
+    });
+});
+
+var app = builder.Build();
+app.UseRateLimiter();
+// ────────────────────────────────────────────────────────────
+
+app.MapControllers();
+app.Run();
+```
+
+**Controller** — `vm2/Controllers/CharactersController.cs`:
 
 ```csharp
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("fixed")]  // Applies to all actions in this controller
 public class CharactersController : ControllerBase
 {
     private readonly IHttpClientFactory _factory;
@@ -375,8 +516,40 @@ public class CharactersController : ControllerBase
         var response = await client.GetFromJsonAsync<CharacterPageResponse>(url);
         return Ok(response);
     }
+
+    // Health check — no rate limit (essential for k8s liveness/readiness probes)
+    [HttpGet("/health")]
+    [DisableRateLimiting]
+    public IActionResult Health() => Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
+
+    // Prometheus metrics endpoint — no rate limit (scraped every 15s)
+    [HttpGet("/metrics")]
+    [DisableRateLimiting]
+    public IActionResult Metrics() => Ok(new { requests_served = _counter, cache_hits = _cacheHits });
+}
+
+// Sync controller — stricter rate limit (2 req per 10 min)
+[ApiController]
+[Route("api/[controller]")]
+[EnableRateLimiting("sync")]
+public class SyncController : ControllerBase
+{
+    [HttpPost("run")]
+    public async Task<IActionResult> RunSync()
+    {
+        // Walk all pages, bulk-insert into PostgreSQL (Scenario C)
+        // ...
+        return Ok(new { synced = DateTime.UtcNow, pages = 42 });
+    }
 }
 ```
+
+**Why rate limiting matters here:**
+- Protects the upstream Rick and Morty API from accidental abuse (no auth = no per-user throttling)
+- Prevents a runaway frontend loop from taking down the .NET API
+- The sync endpoint gets a separate, stricter policy — full syncs are expensive
+- Health and metrics endpoints are excluded — k8s probes and Prometheus scrapes must never be throttled
+- The `X-RateLimit-Retry-After` header is automatically added to 429 responses by ASP.NET Core
 
 ---
 
@@ -428,23 +601,116 @@ CREATE INDEX characters_name_fts ON characters USING GIN(to_tsvector('english', 
 
 ---
 
+## Docker Compose Quick-Start
+
+Skip the VMs — run all three services on a single machine with Docker Compose. Good for local dev, demos, and CI.
+
+`docker-compose.yml`:
+
+```yaml
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rickmorty-db
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: rickmorty
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./vm3/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d rickmorty"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  dotnet-api:
+    build:
+      context: ./vm2
+      dockerfile: Dockerfile
+    container_name: rickmorty-api
+    environment:
+      RICKMORTY_BASE_URL: https://rickandmortyapi.com/api
+      ConnectionStrings__DefaultConnection: Host=postgres;Database=rickmorty;Username=app;Password=secret
+      CACHE_TTL_MINUTES: 60
+      RATE_LIMIT_PERMIT_LIMIT: 100
+      RATE_LIMIT_WINDOW_SECONDS: 60
+    ports:
+      - "5000:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  node-frontend:
+    build:
+      context: ./vm1
+      dockerfile: Dockerfile
+    container_name: rickmorty-web
+    environment:
+      API_BASE_URL: http://dotnet-api:8080
+      NEXT_PUBLIC_APP_NAME: Rick & Morty Explorer
+    ports:
+      - "3000:3000"
+    depends_on:
+      - dotnet-api
+
+volumes:
+  pgdata:
+```
+
+```bash
+# One command to start everything:
+docker compose up -d
+
+# Check status:
+docker compose ps
+
+# Trigger a full sync:
+curl -X POST http://localhost:5000/api/sync/run
+
+# Open the frontend:
+open http://localhost:3000
+
+# Tear down:
+docker compose down -v
+```
+
+---
+
 ## Environment Variables
 
-| Variable | VM | Description |
+| Variable | Service | Description |
 |---|---|---|
-| `API_BASE_URL` | VM1 | VM2's internal URL, e.g. `http://192.168.1.20:5000` |
-| `RICKMORTY_BASE_URL` | VM2 | `https://rickandmortyapi.com/api` |
-| `ConnectionStrings__DefaultConnection` | VM2 | PostgreSQL connection string |
-| `CACHE_TTL_MINUTES` | VM2 | How long cached data is considered fresh |
-| `SYNC_ENABLED` | VM2 | `true`/`false` — enable the background full-sync job |
-| `SYNC_CRON` | VM2 | Cron expression for sync schedule, e.g. `0 3 * * *` |
-| `DB_HOST` | VM3 | Postgres host (used in monitoring/backups) |
+| `API_BASE_URL` | VM1 / Node | VM2's internal URL, e.g. `http://192.168.1.20:5000` |
+| `RICKMORTY_BASE_URL` | VM2 / .NET | `https://rickandmortyapi.com/api` |
+| `ConnectionStrings__DefaultConnection` | VM2 / .NET | PostgreSQL connection string |
+| `CACHE_TTL_MINUTES` | VM2 / .NET | How long cached data is considered fresh (default: 60) |
+| `RATE_LIMIT_PERMIT_LIMIT` | VM2 / .NET | Max requests per window per IP (default: 100) |
+| `RATE_LIMIT_WINDOW_SECONDS` | VM2 / .NET | Rate limit window duration in seconds (default: 60) |
+| `SYNC_ENABLED` | VM2 / .NET | `true`/`false` — enable the background full-sync job |
+| `SYNC_CRON` | VM2 / .NET | Cron expression for sync schedule, e.g. `0 3 * * *` |
+| `DB_HOST` | VM3 / Postgres | Postgres host (used in monitoring/backups) |
 
 Store secrets in `.env` files locally and in your secret manager (Vault, AWS Secrets Manager, Azure Key Vault) in deployed environments. Never commit credentials.
 
 ---
 
 ## Running the Stack
+
+### Option 1: Docker Compose (recommended for local dev)
+
+```bash
+docker compose up -d
+```
+
+See [Docker Compose Quick-Start](#docker-compose-quick-start) above for the full file.
+
+### Option 2: Manual (3 VMs)
 
 **1. Start PostgreSQL on VM3:**
 ```bash
@@ -475,6 +741,71 @@ curl -X POST http://192.168.1.20:5000/api/sync/run
 
 ---
 
+## Monitoring & Backups
+
+### Health Checks
+
+The .NET API exposes two un-rate-limited endpoints for operational use:
+
+| Endpoint | Purpose | Example |
+|---|---|---|
+| `GET /health` | Liveness/readiness probe for orchestrators (k8s, Docker, load balancers) | `curl http://localhost:5000/health` → `{"status":"healthy"}` |
+| `GET /metrics` | Prometheus scrape target (stub — extend with `prometheus-net` in Phase 3) | `curl http://localhost:5000/metrics` → `{"requests_served":1423,"cache_hits":891}` |
+
+**Docker health checks** are built into the Compose file — `docker compose ps` shows health status for each container.
+
+### Database Backups
+
+**Manual backup (VM3):**
+```bash
+pg_dump -U app -d rickmorty -F c -f /backups/rickmorty_$(date +%Y%m%d).dump
+```
+
+**Automated nightly backup via cron (VM3):**
+```bash
+# /etc/cron.d/rickmorty-backup
+0 2 * * * postgres pg_dump -U app -d rickmorty -F c -f /backups/rickmorty_$(date +\%Y\%m\%d).dump
+```
+
+**Restore:**
+```bash
+pg_restore -U app -d rickmorty /backups/rickmorty_20260605.dump
+```
+
+### What to Monitor
+
+| Signal | Tool | Why |
+|---|---|---|
+| API request rate & latency | Prometheus via `/metrics` | Detect performance regressions before users notice |
+| Cache hit ratio | Custom metric in `/metrics` | Low hit ratio = cache misconfigured or TTL too short |
+| Rate limit hits (429 responses) | ASP.NET Core built-in counters | Indicates abuse or a misbehaving client |
+| PostgreSQL connection count | `pg_stat_activity` | Connection leaks are the #1 cause of DB outages |
+| Disk usage on VM3 | `df -h /var/lib/postgresql` | Full disk = database stops writing |
+| Sync job status | App logs + last `synced_at` in DB | Sync failures mean stale data served to users |
+
+---
+
+## Where This Fits in the k3s-pi5 Curriculum
+
+This README is the **reference implementation** that the [k3s-pi5 learning platform](https://baiganio.github.io/k3s-pi5/) modules build upon. Each concept here maps to one or more modules in the curriculum:
+
+| README Concept | k3s-pi5 Module(s) | What You Learn |
+|---|---|---|
+| VM provisioning (VM1/VM2/VM3) | M1: Virtual Machines & Provisioning | Vagrant, Parallels/VMware, Ansible provisioning |
+| Manual service startup | M1: DevOps Intro | The "before containers" baseline |
+| Docker Compose quick-start | M2: Standalone Containers | Dockerfiles, multi-stage builds, Compose networking |
+| .NET API + PostgreSQL | M3: Sample Apps | Node.js + Postgres on k3s; ConfigMaps, Secrets, Ingress |
+| PostgreSQL schema + PVC | M3: Persistent Storage | StatefulSets, PVCs, storage classes on ARM64 |
+| Rate limiting | M3: Security | NetworkPolicies, RBAC, Secrets rotation |
+| Health checks + metrics | M4: Observability (Phase 3) | Prometheus, Grafana, Loki, OpenTelemetry |
+| Full sync (Scenario C) | M5: CI/CD (Phase 2) | GitHub Actions → build → push GHCR → deploy k3s |
+| Scenario D (k3s) | M3: K3s on Pi 5 | Cluster setup, Cloudflare Tunnel, cert-manager |
+| Monitoring & backups | M4: Alerting & SLOs (Phase 3) | PromQL, Alertmanager, runbooks, disaster recovery |
+
+**Learning path:** Start with this README to understand the architecture patterns → follow the k3s-pi5 modules in order (M1 → M2 → M3 → M4 → M5) → return here to see how each concept fits into a real, working reference implementation.
+
+---
+
 ## Extending the Setup
 
 | Use Case | How |
@@ -483,9 +814,11 @@ curl -X POST http://192.168.1.20:5000/api/sync/run
 | **GraphQL on VM2** | Replace REST proxy with a GraphQL layer using Hot Chocolate (.NET) — query `rickandmortyapi.com/graphql` upstream. |
 | **Authentication** | Add JWT middleware to VM2. VM1 sends bearer tokens; VM2 validates before serving data. |
 | **Search** | Use PostgreSQL full-text search (`to_tsvector`) on the `characters` table for name/species search. |
-| **Containerise** | Wrap each VM's service in a Dockerfile. Use Docker Compose or Kubernetes to orchestrate all three together. |
+| **Containerise** | Wrap each service in a Dockerfile. Use Docker Compose (see above) or Kubernetes (see Scenario D). |
 | **Event streaming** | Emit character sync events from VM2 to a message broker (RabbitMQ / Kafka). Other consumers can react to updates independently. |
 | **Analytics** | Add a fourth service (Python / dbt) that reads from VM3 and builds aggregate reports — episode appearance counts, species breakdowns, etc. |
+| **CI/CD Pipeline** | GitHub Actions workflow: on push → `docker buildx` for `linux/arm64` → push to GHCR → update image tag in Helm chart → ArgoCD syncs to k3s. See curriculum Phase 2. |
+| **TLS Everywhere** | cert-manager + Let's Encrypt on k3s (Scenario D). For VMs: terminate TLS at an Nginx reverse proxy in front of VM2. |
 
 ---
 
@@ -495,8 +828,11 @@ curl -X POST http://192.168.1.20:5000/api/sync/run
 - **GraphQL Playground:** https://rickandmortyapi.com/graphql
 - **JavaScript Client:** https://github.com/afuh/rick-and-morty-api-node
 - **ASP.NET Core Docs:** https://learn.microsoft.com/en-us/aspnet/core
+- **ASP.NET Core Rate Limiting:** https://learn.microsoft.com/en-us/aspnet/core/performance/rate-limit
 - **Npgsql EF Core Provider:** https://www.npgsql.org/efcore/
-
+- **k3s-pi5 Live Site:** https://baiganio.github.io/k3s-pi5/
+- **k3s Documentation:** https://docs.k3s.io/
+- **Hero image:** https://raw.githubusercontent.com/BaiGanio/js4b/master/images/rick-and-morty.jpg
 ---
 
 *Data and images from Rick and Morty belong to their respective owners (Adult Swim / Justin Roiland / Dan Harmon). This project is for educational and development purposes only.*
