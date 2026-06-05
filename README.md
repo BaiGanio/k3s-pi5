@@ -15,12 +15,15 @@
 | 6 | Docker Compose quick-start | ✅ Done | Single-command local dev; `docker compose up` spins all 3 services |
 | 7 | Monitoring & backups | ✅ Done | Health checks, `pg_dump` cron, Prometheus metrics endpoint stub |
 | 8 | Curriculum mapping (k3s-pi5 modules) | ✅ Done | Table mapping README concepts → site modules |
-| 9 | CI/CD pipeline (GitHub Actions) | 🔜 Next | Build → test → push to GHCR → deploy to k3s |
-| 10 | Add Redis L1 cache layer | ⏳ Planned | Sub-millisecond cache between VM2 and VM3 |
-| 11 | Add Auth (JWT + API keys) | ⏳ Planned | Protect VM2 endpoints; VM1 sends bearer tokens |
-| 12 | Observability (Prometheus + Grafana) | ⏳ Planned | Scrape `/metrics`, build dashboards, define SLOs |
-| 13 | Infrastructure as Code (Terraform) | ⏳ Planned | Provision VMs declaratively; drift detection |
-| 14 | GitOps (ArgoCD on k3s) | ⏳ Planned | App-of-apps pattern; image updater; PR-based deployments |
+| 9 | CI/CD pipeline (Jenkins) | ✅ Done | Curriculum: self-hosted Jenkins (master + agents on Vagrant VMs) — build → test → containerize → deploy the .NET & Node apps. GitHub Actions variant optional |
+| 10 | Config management (Ansible) | ✅ Done | Curriculum: agentless playbooks deploy the .NET & Node apps as `systemd` services, backed by Postgres |
+| 11 | Monitoring (Nagios Core) | ✅ Done | Curriculum: check-based monitoring + alerting for the APIs, Postgres, and containers |
+| 12 | Cloud reach (AWS free tier) | ✅ Done | Curriculum: EC2, IAM + CLI, ECS, Vagrant cloud provisioning — cost-aware, free-tier |
+| 13 | Add Redis L1 cache layer | ⏳ Planned | Sub-millisecond cache between the API and Postgres |
+| 14 | Add Auth (JWT + API keys) | ⏳ Planned | Protect API endpoints; the frontend sends bearer tokens |
+| 15 | Observability stack (Prometheus + Grafana + Loki) | 🔭 Optional | Richer metrics/logs/dashboards alongside Nagios |
+| 16 | Infrastructure as Code (Terraform) | 🔭 Optional | Provision cloud resources declaratively; drift detection |
+| 17 | GitOps (ArgoCD or Flux) | 🔭 Optional | App-of-apps; reconcile the cluster from Git; PR-based deploys |
 
 ---
 
@@ -144,7 +147,7 @@ This makes it an ideal API for practicing real-world multi-service integration p
 
 Each service is independently deployable. The .NET layer is the central orchestrator — it decides whether to serve data from PostgreSQL cache or fetch fresh from the upstream Rick and Morty API, all while enforcing rate limits to protect both itself and the upstream.
 
-**Evolution path:** VMs → Docker Compose (this README) → k3s/Kubernetes (Scenario D) → GitOps with ArgoCD (curriculum Phase 2).
+**Evolution path:** VMs → Docker Compose (this README) → k3s/Kubernetes (Scenario D) → automated delivery & monitoring (Jenkins, Nagios — curriculum Phase 3) → cloud reach (AWS — Phase 4). GitOps with ArgoCD is an optional later step.
 
 ---
 
@@ -789,20 +792,20 @@ pg_restore -U app -d rickmorty /backups/rickmorty_20260605.dump
 
 This README is the **reference implementation** that the [k3s-pi5 learning platform](https://baiganio.github.io/k3s-pi5/) modules build upon. Each concept here maps to one or more modules in the curriculum:
 
-| README Concept | k3s-pi5 Module(s) | What You Learn |
+| README Concept | k3s-pi5 Curriculum Group | What You Learn |
 |---|---|---|
-| VM provisioning (VM1/VM2/VM3) | M1: Virtual Machines & Provisioning | Vagrant, Parallels/VMware, Ansible provisioning |
-| Manual service startup | M1: DevOps Intro | The "before containers" baseline |
-| Docker Compose quick-start | M2: Standalone Containers | Dockerfiles, multi-stage builds, Compose networking |
-| .NET API + PostgreSQL | M3: Sample Apps | Node.js + Postgres on k3s; ConfigMaps, Secrets, Ingress |
-| PostgreSQL schema + PVC | M3: Persistent Storage | StatefulSets, PVCs, storage classes on ARM64 |
-| Rate limiting | M3: Security | NetworkPolicies, RBAC, Secrets rotation |
-| Health checks + metrics | M4: Observability (Phase 3) | Prometheus, Grafana, Loki, OpenTelemetry |
-| Full sync (Scenario C) | M5: CI/CD (Phase 2) | GitHub Actions → build → push GHCR → deploy k3s |
-| Scenario D (k3s) | M3: K3s on Pi 5 | Cluster setup, Cloudflare Tunnel, cert-manager |
-| Monitoring & backups | M4: Alerting & SLOs (Phase 3) | PromQL, Alertmanager, runbooks, disaster recovery |
+| VM provisioning (3-service split) | Virtual Machines & Provisioning | Vagrant on Parallels/VMware; Ansible playbooks deploy the .NET & Node apps |
+| Manual service startup | Virtual Machines & Provisioning — DevOps Intro | The "before containers" baseline |
+| Docker Compose quick-start | Containers (Docker) | Dockerfiles, multi-stage builds, Compose networking |
+| .NET API + PostgreSQL | Orchestration (k3s) — Sample Apps | Node.js + Postgres on k3s; ConfigMaps, Secrets, Ingress |
+| PostgreSQL schema + PVC | Orchestration (k3s) — Persistent Storage | StatefulSets, PVCs, storage classes on ARM64 |
+| Rate limiting / hardening | Orchestration (k3s) — Security | Secrets rotation, RBAC, NetworkPolicy notes |
+| Scenario D (k3s) | Orchestration (k3s) — Setup on Pi 5 | Cluster setup, Cloudflare Tunnel |
+| Build → test → deploy | CI/CD (Jenkins) | Self-hosted pipelines on Vagrant VMs (master + agents) |
+| Monitoring & backups | Monitoring (Nagios Core) | Check-based monitoring + alerting for APIs, Postgres, containers |
+| Cloud reach | Cloud (AWS, free tier) | EC2, IAM + CLI, ECS, Vagrant cloud provisioning |
 
-**Learning path:** Start with this README to understand the architecture patterns → follow the k3s-pi5 modules in order (M1 → M2 → M3 → M4 → M5) → return here to see how each concept fits into a real, working reference implementation.
+**Learning path:** Start with this README to understand the architecture patterns → follow the k3s-pi5 curriculum groups in order (VMs & Provisioning → Containers → Orchestration → CI/CD → Monitoring → Cloud) → return here to see how each concept fits into a real, working reference implementation. See [roadmap/](roadmap/roadmap.md) for the staged "path we walked."
 
 ---
 
@@ -817,7 +820,7 @@ This README is the **reference implementation** that the [k3s-pi5 learning platf
 | **Containerise** | Wrap each service in a Dockerfile. Use Docker Compose (see above) or Kubernetes (see Scenario D). |
 | **Event streaming** | Emit character sync events from VM2 to a message broker (RabbitMQ / Kafka). Other consumers can react to updates independently. |
 | **Analytics** | Add a fourth service (Python / dbt) that reads from VM3 and builds aggregate reports — episode appearance counts, species breakdowns, etc. |
-| **CI/CD Pipeline** | GitHub Actions workflow: on push → `docker buildx` for `linux/arm64` → push to GHCR → update image tag in Helm chart → ArgoCD syncs to k3s. See curriculum Phase 2. |
+| **CI/CD Pipeline** | The curriculum's built path uses self-hosted **Jenkins** (curriculum Phase 3). As an optional variant: a GitHub Actions workflow on push → `docker buildx` for `linux/arm64` → push to GHCR → update image tag in a Helm chart → ArgoCD syncs to k3s. |
 | **TLS Everywhere** | cert-manager + Let's Encrypt on k3s (Scenario D). For VMs: terminate TLS at an Nginx reverse proxy in front of VM2. |
 
 ---

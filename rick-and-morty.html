@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rick &amp; Morty API — Reference Architecture · k3s-pi5</title>
+
+  <!-- Bootstrap 5 + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+
+  <!-- Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@700;800;900&display=swap"
+    rel="stylesheet" />
+
+  <!-- k3s-pi5 design tokens + components -->
+  <link rel="stylesheet" href="styles/index.css" />
+  <link rel="stylesheet" href="styles/components.css" />
+
+  <style>
+    /* ── Hero ─────────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: #071336;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://raw.githubusercontent.com/BaiGanio/js4b/master/images/rick-and-morty.jpg');
+      background-position: center 30%;
+      background-size: cover;
+      opacity: 0.45;
+      filter: saturate(0.85);
+    }
+
+    .hero-overlay {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 2rem 1.5rem;
+      max-width: 760px;
+    }
+
+    .hero-overlay h1 {
+      font-family: 'Orbitron', 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 2.3rem;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+    }
+
+    .hero-overlay .hero-sub {
+      font-family: 'Inter', sans-serif;
+      font-size: 1.1rem;
+      color: #b8c4e0;
+      margin-bottom: 0.3rem;
+      line-height: 1.6;
+    }
+
+    .hero-overlay .hero-ctx {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: #6878a8;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Page layout ──────────────────────────────────────────────────────── */
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-app);
+      color: var(--text-primary);
+    }
+
+    .page-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 5rem;
+    }
+
+    /* ── Encyclopedia section card ────────────────────────────────────────── */
+    .encyc-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .encyc-section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: var(--font-sans);
+    }
+
+    .encyc-section-header:hover {
+      background: var(--bg-surface);
+    }
+
+    .encyc-section-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+    }
+
+    .encyc-section-title {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    .encyc-section-chevron {
+      color: var(--text-secondary);
+      transition: transform 0.25s ease;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+    }
+
+    .encyc-section.collapsed .encyc-section-chevron {
+      transform: rotate(-90deg);
+    }
+
+    .encyc-section-body {
+      max-height: 6000px;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .encyc-section.collapsed .encyc-section-body {
+      max-height: 0;
+    }
+
+    .encyc-section-body-inner {
+      padding: 0 1.5rem 1.5rem;
+      line-height: 1.75;
+    }
+
+    .encyc-section-body-inner h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 1.2rem 0 0.5rem;
+    }
+
+    .encyc-section-body-inner h3:first-child {
+      margin-top: 0;
+    }
+
+    .encyc-section-body-inner p {
+      margin-bottom: 0.85rem;
+    }
+
+    .encyc-section-body-inner ul,
+    .encyc-section-body-inner ol {
+      margin-bottom: 0.85rem;
+      padding-left: 1.3rem;
+    }
+
+    .encyc-section-body-inner li {
+      margin-bottom: 0.35rem;
+    }
+
+    /* ── Status badge ─────────────────────────────────────────────────────── */
+    .status-done {
+      display: inline-block;
+      background: #d4edda;
+      color: #155724;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 1px 8px;
+      border-radius: 4px;
+      margin-left: 0.4rem;
+    }
+
+    html.dark .status-done {
+      background: #1a3a24;
+      color: #7ddf90;
+    }
+
+    .status-next {
+      display: inline-block;
+      background: #fff3cd;
+      color: #856404;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 1px 8px;
+      border-radius: 4px;
+      margin-left: 0.4rem;
+    }
+
+    html.dark .status-next {
+      background: #3d320f;
+      color: #f0d86e;
+    }
+
+    .status-planned {
+      display: inline-block;
+      background: #e2e3e5;
+      color: #383d41;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 1px 8px;
+      border-radius: 4px;
+      margin-left: 0.4rem;
+    }
+
+    html.dark .status-planned {
+      background: #2a2d32;
+      color: #9ca3af;
+    }
+
+    /* ── Architecture diagram inside prose ─────────────────────────────────── */
+    .arch-diagram {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1.25rem;
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      white-space: pre;
+      margin: 1rem 0;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────────────── */
+    .page-footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+    }
+
+    .page-footer a {
+      color: var(--text-accent);
+      text-decoration: none;
+    }
+
+    .page-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Navbar tweaks ────────────────────────────────────────────────────── */
+    .navbar .nav-link {
+      font-size: 0.88rem;
+    }
+
+    /* ── Responsive ───────────────────────────────────────────────────────── */
+    @media (max-width: 576px) {
+      .hero-overlay h1 {
+        font-size: 1.5rem;
+      }
+      .hero-overlay .hero-sub {
+        font-size: 0.9rem;
+      }
+      .hero {
+        min-height: 280px;
+      }
+      .page-content {
+        padding: 1.5rem 1rem 3rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── Navbar ────────────────────────────────────────────────────────────── -->
+  <nav class="navbar navbar-dark bg-dark sticky-top shadow-sm">
+    <div class="container-fluid px-3">
+      <div class="d-flex align-items-center gap-2">
+        <a class="navbar-brand fw-bold mb-0" href="index.html">
+          <span style="font-family:'JetBrains Mono',monospace; font-size:0.95rem;">k3s-pi5</span>
+        </a>
+        <span class="text-secondary d-none d-md-inline ms-1" style="font-size:0.8rem;">|</span>
+        <span class="text-secondary" style="font-size:0.82rem;">Reference Architecture</span>
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <button id="theme-toggle" class="btn btn-sm btn-outline-secondary" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <i id="theme-icon" class="bi bi-moon-fill" style="font-size:0.95rem;"></i>
+        </button>
+        <a class="nav-link text-secondary px-2" href="index.html" style="font-size:0.88rem;">
+          <i class="bi bi-house"></i> Site
+        </a>
+        <a class="nav-link text-secondary px-2" href="https://github.com/BaiGanio/k3s-pi5" target="_blank" rel="noopener" style="font-size:0.88rem;">
+          <i class="bi bi-github"></i> Repo
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="hero-overlay">
+      <h1>Rick &amp; Morty API</h1>
+      <p class="hero-sub">
+        The ground-floor reference implementation for the k3s-pi5 DevOps learning platform.
+        A complete multi-service architecture — Node.js, .NET, PostgreSQL — built around
+        a free, public, zero-auth REST and GraphQL API.
+      </p>
+      <p class="hero-ctx">Reference Architecture · Encyclopedia</p>
+    </div>
+  </section>
+
+  <!-- ── Content ───────────────────────────────────────────────────────────── -->
+  <main class="page-content">
+
+    <!-- ── Why the Rick and Morty API? ─────────────────────────────────────── -->
+    <div class="encyc-section">
+      <button class="encyc-section-header" aria-expanded="true"
+        onclick="this.parentElement.classList.toggle('collapsed'); this.setAttribute('aria-expanded', String(!this.parentElement.classList.contains('collapsed')));">
+        <span class="encyc-section-icon">🛸</span>
+        <span class="encyc-section-title">Why the Rick &amp; Morty API?</span>
+        <span class="encyc-section-chevron">▾</span>
+      </button>
+      <div class="encyc-section-body">
+        <div class="encyc-section-body-inner">
+
+          <p>
+            Every DevOps curriculum needs a <strong>sample application</strong> — something
+            real enough to demonstrate production patterns, but simple enough that the
+            <em>infrastructure</em> stays the focus, not the app logic. The
+            <a href="https://rickandmortyapi.com" target="_blank" rel="noopener">Rick and Morty API</a>
+            was chosen as the external data source for this reference implementation because
+            it hits a rare sweet spot:
+          </p>
+
+          <h3>What makes it ideal for a DevOps learning platform</h3>
+
+          <table class="table table-sm" style="font-size:0.88rem;">
+            <thead>
+              <tr><th style="width:30%;">Property</th><th>Why it matters for learning</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Free &amp; public</strong></td>
+                <td>No API keys, no billing, no sign-up. You can focus on architecture, not credential management. Every example in this project is reproducible without registering for anything.</td>
+              </tr>
+              <tr>
+                <td><strong>REST + GraphQL</strong></td>
+                <td>Teaches both paradigms. The reference uses REST for simplicity, but GraphQL is available as a natural extension (see "Extending the Setup" in the README).</td>
+              </tr>
+              <tr>
+                <td><strong>Stable data</strong></td>
+                <td>The show ended production in 2022. Characters, locations, and episodes are canonical — no drift, no breaking changes, no deprecations. Perfect for caching demos and CI/CD integration tests.</td>
+              </tr>
+              <tr>
+                <td><strong>Predictable pagination</strong></td>
+                <td>20 results per page, 42 pages of characters. Ideal for building background sync workers, demonstrating pagination patterns, and testing bulk-import strategies.</td>
+              </tr>
+              <tr>
+                <td><strong>Rich relational data</strong></td>
+                <td>Characters link to episodes, locations have residents, episodes have cast lists. A natural fit for teaching SQL joins, junction tables, and full-text search indexes.</td>
+              </tr>
+              <tr>
+                <td><strong>Memorable &amp; fun</strong></td>
+                <td>DevOps documentation is often dry. The Rick and Morty framing makes the stack more approachable and gives every component a personality — Rick is the .NET layer, Morty is the Node.js frontend, the garage is PostgreSQL.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>What this is NOT</h3>
+          <ul>
+            <li><strong>Not a production app.</strong> This is a reference architecture for learning. It demonstrates patterns you use in production, but it is intentionally minimal.</li>
+            <li><strong>Not a Rick and Morty fan site.</strong> The show is the theme, not the product. The product is the infrastructure patterns.</li>
+            <li><strong>Not the only sample in k3s-pi5.</strong> This is the <em>first</em> reference. Later modules add sample apps in Go, Python, and .NET that build on the same architecture patterns.</li>
+          </ul>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Architecture Overview ──────────────────────────────────────────── -->
+    <div class="encyc-section">
+      <button class="encyc-section-header" aria-expanded="true"
+        onclick="this.parentElement.classList.toggle('collapsed'); this.setAttribute('aria-expanded', String(!this.parentElement.classList.contains('collapsed')));">
+        <span class="encyc-section-icon">🏗️</span>
+        <span class="encyc-section-title">Architecture Overview</span>
+        <span class="encyc-section-chevron">▾</span>
+      </button>
+      <div class="encyc-section-body">
+        <div class="encyc-section-body-inner">
+
+          <p>
+            The reference implements a <strong>3-tier architecture</strong> with a
+            <strong>.NET API gateway</strong> as the central orchestrator. Every data
+            request from the frontend passes through the .NET layer — never directly
+            to the upstream API or the database.
+          </p>
+
+          <div class="arch-diagram">
+┌─────────────────────────────────────────────┐
+│          Rick and Morty API                 │
+│       rickandmortyapi.com/api               │
+└──────────────────┬──────────────────────────┘
+                   │ HTTPS
+                   ▼
+┌─────────────────────────────────────────────┐
+│  .NET API Gateway (VM2 / k3s Deployment)    │
+│                                             │
+│  • Rate-limited (100 req/min per IP)        │
+│  • Cache-aside pattern (Postgres L2)        │
+│  • Background sync worker (IHostedService)  │
+│  • Health + metrics endpoints               │
+└────────┬───────────────────┬────────────────┘
+         │ HTTP (internal)    │ TCP 5432
+         ▼                    ▼
+┌──────────────────┐  ┌───────────────────────┐
+│  Node.js Frontend│  │  PostgreSQL (VM3 /    │
+│  (React/Next.js) │  │  k3s StatefulSet)     │
+│  Port 3000       │  │  Port 5432            │
+└──────────────────┘  └───────────────────────┘</div>
+
+          <h3>Key Architectural Decisions</h3>
+
+          <table class="table table-sm" style="font-size:0.88rem;">
+            <thead>
+              <tr><th style="width:35%;">Decision</th><th>Rationale</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>.NET as the orchestrator</strong></td>
+                <td>The project author's primary stack is .NET/C#. The API gateway pattern maps naturally to ASP.NET Core's middleware pipeline — caching, rate limiting, auth, and logging are all first-class middleware concerns. The same patterns work in Express.js, Go, or Python — .NET is the <em>example</em>, not the requirement.</td>
+              </tr>
+              <tr>
+                <td><strong>PostgreSQL over SQLite</strong></td>
+                <td>SQLite would be simpler but teaches nothing about connection strings, network isolation, or persistent volumes. PostgreSQL forces you to think about these — exactly the skills you need for Kubernetes StatefulSets.</td>
+              </tr>
+              <tr>
+                <td><strong>Node.js frontend, not .NET Blazor</strong></td>
+                <td>A polyglot stack demonstrates cross-service communication patterns. The Node.js app must understand HTTP clients, error handling, and retries — universal skills independent of language.</td>
+              </tr>
+              <tr>
+                <td><strong>Cache-aside, not write-through</strong></td>
+                <td>The API data is read-heavy and changes rarely. Cache-aside (check cache → miss → fetch → store → return) is the simplest pattern that still teaches cache invalidation and TTL management.</td>
+              </tr>
+              <tr>
+                <td><strong>Fixed-window rate limiter</strong></td>
+                <td>Simple to understand, built into .NET 8 with zero extra packages, and produces clear 429 responses with <code>Retry-After</code> headers. A token-bucket or sliding-window limiter would be more precise but adds complexity without adding learning value at this stage.</td>
+              </tr>
+            </tbody>
+          </table>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── The Four Scenarios ──────────────────────────────────────────────── -->
+    <div class="encyc-section">
+      <button class="encyc-section-header" aria-expanded="true"
+        onclick="this.parentElement.classList.toggle('collapsed'); this.setAttribute('aria-expanded', String(!this.parentElement.classList.contains('collapsed')));">
+        <span class="encyc-section-icon">🗺️</span>
+        <span class="encyc-section-title">The Four Scenarios — Progressive Complexity</span>
+        <span class="encyc-section-chevron">▾</span>
+      </button>
+      <div class="encyc-section-body">
+        <div class="encyc-section-body-inner">
+
+          <p>
+            The reference architecture is presented as four progressive scenarios.
+            Each one adds a layer without removing the previous one — you see
+            <em>why</em> each layer exists before it's added.
+          </p>
+
+          <div class="table-responsive">
+            <table class="table table-sm" style="font-size:0.87rem;">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Scenario</th>
+                  <th>What it teaches</th>
+                  <th>When to use</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>A</strong></td>
+                  <td>Direct Fetch (no cache)</td>
+                  <td>HTTP client basics, JSON deserialization, API proxying</td>
+                  <td>Local dev, demos, freshness-critical</td>
+                  <td><span class="status-done">Done</span></td>
+                </tr>
+                <tr>
+                  <td><strong>B</strong></td>
+                  <td>.NET Proxy + PostgreSQL Cache</td>
+                  <td>Cache-aside pattern, TTL management, DB as L2 cache, connection pooling</td>
+                  <td>Production-like, reducing upstream calls</td>
+                  <td><span class="status-done">Done</span></td>
+                </tr>
+                <tr>
+                  <td><strong>C</strong></td>
+                  <td>Full Sync (bulk import)</td>
+                  <td>Background jobs (<code>IHostedService</code>), bulk inserts, paginated API walking, cron scheduling</td>
+                  <td>High-traffic, search, analytics, offline mode</td>
+                  <td><span class="status-done">Done</span></td>
+                </tr>
+                <tr>
+                  <td><strong>D</strong></td>
+                  <td>Containerized on k3s</td>
+                  <td>VM → Kubernetes mapping, Deployments, Services, Ingress, StatefulSets, PVCs, NetworkPolicies</td>
+                  <td>The target architecture — everything beyond local dev</td>
+                  <td><span class="status-done">Done</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>The pedagogical thread</h3>
+          <p>
+            Scenario A is the "hello world" — it proves connectivity. Scenario B adds
+            caching and introduces the database. Scenario C removes the upstream
+            dependency entirely. Scenario D maps the whole thing to Kubernetes.
+            Each step is small enough to understand in isolation, but together they
+            cover the full journey from <code>localhost</code> to a production-shaped
+            homelab cluster.
+          </p>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Code Patterns & Conventions ─────────────────────────────────────── -->
+    <div class="encyc-section">
+      <button class="encyc-section-header" aria-expanded="false"
+        onclick="this.parentElement.classList.toggle('collapsed'); this.setAttribute('aria-expanded', String(!this.parentElement.classList.contains('collapsed')));">
+        <span class="encyc-section-icon">📐</span>
+        <span class="encyc-section-title">Code Patterns &amp; Conventions Established Here</span>
+        <span class="encyc-section-chevron">▾</span>
+      </button>
+      <div class="encyc-section-body">
+        <div class="encyc-section-body-inner">
+
+          <p>
+            Every pattern in this reference implementation recurs in later k3s-pi5
+            modules. Understanding them here means you recognise them everywhere.
+          </p>
+
+          <h3>1. Cache-Aside Pattern</h3>
+          <pre class="arch-diagram" style="font-size:0.8rem;">Client → API → Cache? ──hit──→ return cached
+                    │
+                   miss
+                    │
+                    ▼
+              Upstream API → Store in cache → return</pre>
+          <p>
+            <strong>Where it recurs:</strong> M2 Docker Compose (.NET + Redis),
+            M3 Sample Apps (Node.js + Postgres on k3s).
+          </p>
+
+          <h3>2. Rate Limiting (Fixed Window)</h3>
+          <pre class="arch-diagram" style="font-size:0.8rem;">Request → RateLimiter middleware
+              │
+              ├─ within limit → controller action
+              │
+              └─ exceeded → 429 Too Many Requests + Retry-After header</pre>
+          <p>
+            <strong>Where it recurs:</strong> M3 Security (NetworkPolicies + RBAC),
+            M4 Observability (Prometheus metrics on 429 counts).
+          </p>
+
+          <h3>3. Health + Metrics Endpoints (Un-rate-limited)</h3>
+          <pre class="arch-diagram" style="font-size:0.8rem;">GET /health   → { "status": "healthy" }         ← k8s liveness/readiness
+GET /metrics  → { "requests_served": 1423, ... }  ← Prometheus scrape</pre>
+          <p>
+            <strong>Where it recurs:</strong> Every module that deploys to k3s.
+            M4 Observability replaces the stub with real Prometheus metrics.
+          </p>
+
+          <h3>4. Background Sync Worker</h3>
+          <pre class="arch-diagram" style="font-size:0.8rem;">IHostedService → ExecuteAsync → while (!stopping)
+    ├─ Wait(cron interval)
+    ├─ Walk all API pages (1..42)
+    ├─ Bulk insert/upsert into Postgres
+    └─ Log sync summary</pre>
+          <p>
+            <strong>Where it recurs:</strong> M5 CI/CD (scheduled GitHub Actions),
+            Phase 2 ArgoCD sync loops.
+          </p>
+
+          <h3>5. Environment-Driven Configuration</h3>
+          <p>
+            Every tunable — cache TTL, rate limit threshold, connection string,
+            sync schedule — is an environment variable. No magic numbers in code.
+            This pattern is non-negotiable and enforced across every k3s-pi5 module.
+          </p>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Rate Limiting Deep Dive ─────────────────────────────────────────── -->
+    <div class="encyc-section">
+      <button class="encyc-section-header" aria-expanded="false"
+        onclick="this.parentElement.classList.toggle('collapsed'); this.setAttribute('aria-expanded', String(!this.parentElement.classList.contains('collapsed')));">
+        <span class="encyc-section-icon">🛡️</span>
+        <span class="encyc-section-title">Rate Limiting — Deep Dive</span>
+        <span class="encyc-section-chevron">▾</span>
+      </button>
+      <div class="encyc-section-body">
+        <div class="encyc-section-body-inner">
+
+          <p>
+            The .NET API enforces rate limiting using ASP.NET Core 8's built-in
+            <code>System.Threading.RateLimiting</code> — zero extra NuGet packages.
+          </p>
+
+          <h3>Why rate limiting matters in THIS project</h3>
+          <ul>
+            <li><strong>Protects the upstream API.</strong> The Rick and Morty API has no auth and no documented rate limit. Being a good API citizen means self-throttling.</li>
+            <li><strong>Prevents runaway frontends.</strong> A buggy React effect loop could fire thousands of requests. The rate limiter catches this at the gateway before it reaches the database or upstream.</li>
+            <li><strong>Demonstrates middleware composition.</strong> Rate limiting is the first middleware in the pipeline. It shows how ASP.NET Core's middleware order matters — auth, rate limiting, caching, then the controller.</li>
+          </ul>
+
+          <h3>Policy Design</h3>
+          <table class="table table-sm" style="font-size:0.87rem;">
+            <thead>
+              <tr><th>Policy Name</th><th>Limit</th><th>Window</th><th>Queue</th><th>Applies To</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>fixed</code></td>
+                <td>100 requests</td>
+                <td>60 seconds</td>
+                <td>0 (reject immediately)</td>
+                <td>All <code>/api/*</code> endpoints</td>
+              </tr>
+              <tr>
+                <td><code>sync</code></td>
+                <td>2 requests</td>
+                <td>10 minutes</td>
+                <td>0</td>
+                <td><code>POST /api/sync/run</code> only</td>
+              </tr>
+              <tr>
+                <td><em>none</em></td>
+                <td colspan="3">Disabled via <code>[DisableRateLimiting]</code></td>
+                <td><code>/health</code>, <code>/metrics</code></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Why two policies?</h3>
+          <p>
+            Full syncs (Scenario C) walk 42 API pages and bulk-insert thousands of
+            rows. They're expensive. A separate, stricter policy means someone can
+            browse the API normally while the sync endpoint stays protected from
+            accidental double-triggers. Health and metrics endpoints are deliberately
+            excluded — Kubernetes probes fire every 10 seconds and Prometheus scrapes
+            every 15 seconds; throttling either would trigger false-positive pod
+            restarts.
+          </p>
+
+          <p class="mt-3">
+            <strong>Full implementation:</strong> See the
+            <a href="https://github.com/BaiGanio/k3s-pi5/blob/main/README.md#net--proxy-controller-with-rate-limiting" target="_blank" rel="noopener">.NET Proxy Controller section</a>
+            in the README.
+          </p>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Project Status ──────────────────────────────────────────────────── -->
+    <div class="encyc-section">
+      <button class="encyc-section-header" aria-expanded="false"
+        onclick="this.parentElement.classList.toggle('collapsed'); this.setAttribute('aria-expanded', String(!this.parentElement.classList.contains('collapsed')));">
+        <span class="encyc-section-icon">📋</span>
+        <span class="encyc-section-title">Project Status — What's Done &amp; What's Next</span>
+        <span class="encyc-section-chevron">▾</span>
+      </button>
+      <div class="encyc-section-body">
+        <div class="encyc-section-body-inner">
+
+          <p>
+            This tracker is the canonical source of truth for iteration progress.
+            Each iteration extends the reference architecture; completed items move
+            to Done and their stable content lives in the README.
+          </p>
+
+          <div class="table-responsive">
+            <table class="table table-sm" style="font-size:0.86rem;">
+              <thead>
+                <tr><th style="width:5%;">#</th><th>Item</th><th style="width:12%;">Status</th><th>Notes</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>Scenario A — Direct Fetch</td><td><span class="status-done">✅ Done</span></td><td>Passthrough proxy, zero DB dependency</td></tr>
+                <tr><td>2</td><td>Scenario B — .NET Proxy + PostgreSQL Cache</td><td><span class="status-done">✅ Done</span></td><td>Cache-aside pattern, configurable TTL</td></tr>
+                <tr><td>3</td><td>Scenario C — Full Sync (bulk import)</td><td><span class="status-done">✅ Done</span></td><td>Background IHostedService, daily cron</td></tr>
+                <tr><td>4</td><td>Scenario D — Containerized on k3s</td><td><span class="status-done">✅ Done</span></td><td>VMs → Kubernetes mapping</td></tr>
+                <tr><td>5</td><td>Rate limiter on .NET API</td><td><span class="status-done">✅ Done</span></td><td>Fixed-window, 100 req/min per IP</td></tr>
+                <tr><td>6</td><td>Docker Compose quick-start</td><td><span class="status-done">✅ Done</span></td><td>Single-command local dev</td></tr>
+                <tr><td>7</td><td>Monitoring &amp; backups</td><td><span class="status-done">✅ Done</span></td><td>Health checks, pg_dump cron</td></tr>
+                <tr><td>8</td><td>Curriculum mapping</td><td><span class="status-done">✅ Done</span></td><td>README concepts → site modules</td></tr>
+                <tr><td>9</td><td>CI/CD pipeline</td><td><span class="status-next">🔜 Next</span></td><td>GitHub Actions → GHCR → deploy k3s</td></tr>
+                <tr><td>10</td><td>Add Redis L1 cache</td><td><span class="status-planned">⏳ Planned</span></td><td>Sub-millisecond cache layer</td></tr>
+                <tr><td>11</td><td>Auth (JWT + API keys)</td><td><span class="status-planned">⏳ Planned</span></td><td>Protect VM2 endpoints</td></tr>
+                <tr><td>12</td><td>Observability (Prometheus + Grafana)</td><td><span class="status-planned">⏳ Planned</span></td><td>Scrape /metrics, dashboards, SLOs</td></tr>
+                <tr><td>13</td><td>Infrastructure as Code (Terraform)</td><td><span class="status-planned">⏳ Planned</span></td><td>Provision VMs declaratively</td></tr>
+                <tr><td>14</td><td>GitOps (ArgoCD on k3s)</td><td><span class="status-planned">⏳ Planned</span></td><td>App-of-apps pattern</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Curriculum Connection ──────────────────────────────────────────── -->
+    <div class="encyc-section">
+      <button class="encyc-section-header" aria-expanded="false"
+        onclick="this.parentElement.classList.toggle('collapsed'); this.setAttribute('aria-expanded', String(!this.parentElement.classList.contains('collapsed')));">
+        <span class="encyc-section-icon">🔗</span>
+        <span class="encyc-section-title">How This Connects to the k3s-pi5 Curriculum</span>
+        <span class="encyc-section-chevron">▾</span>
+      </button>
+      <div class="encyc-section-body">
+        <div class="encyc-section-body-inner">
+
+          <p>
+            This reference architecture is the <strong>first concrete example</strong>
+            in the k3s-pi5 learning platform. Every concept established here maps to
+            one or more modules in the curriculum:
+          </p>
+
+          <div class="table-responsive">
+            <table class="table table-sm" style="font-size:0.86rem;">
+              <thead>
+                <tr><th>Reference Concept</th><th>k3s-pi5 Module(s)</th><th>What You Learn</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>VM provisioning (VM1/2/3)</td><td>M1: Virtual Machines &amp; Provisioning</td><td>Vagrant, Parallels/VMware, Ansible</td></tr>
+                <tr><td>Manual service startup</td><td>M1: DevOps Intro</td><td>The "before containers" baseline</td></tr>
+                <tr><td>Docker Compose</td><td>M2: Standalone Containers</td><td>Dockerfiles, multi-stage builds, Compose</td></tr>
+                <tr><td>.NET API + PostgreSQL</td><td>M3: Sample Apps</td><td>ConfigMaps, Secrets, Ingress on k3s</td></tr>
+                <tr><td>PostgreSQL schema + PVC</td><td>M3: Persistent Storage</td><td>StatefulSets, PVCs, storage classes</td></tr>
+                <tr><td>Rate limiting</td><td>M3: Security</td><td>NetworkPolicies, RBAC, Secrets rotation</td></tr>
+                <tr><td>Health checks + metrics</td><td>M4: Observability (Phase 3)</td><td>Prometheus, Grafana, Loki, OpenTelemetry</td></tr>
+                <tr><td>Full sync (Scenario C)</td><td>M5: CI/CD (Phase 2)</td><td>GitHub Actions → GHCR → deploy k3s</td></tr>
+                <tr><td>Scenario D (k3s)</td><td>M3: K3s on Pi 5</td><td>Cluster setup, Cloudflare Tunnel, cert-manager</td></tr>
+                <tr><td>Monitoring &amp; backups</td><td>M4: Alerting &amp; SLOs (Phase 3)</td><td>PromQL, Alertmanager, runbooks</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Recommended Learning Path</h3>
+          <ol>
+            <li><strong>Read this encyclopedia page</strong> — understand the architecture, the decisions, the patterns.</li>
+            <li><strong>Read the <a href="README.md">README</a></strong> — study the full code, environment variables, and deployment options.</li>
+            <li><strong>Follow the k3s-pi5 modules in order</strong> (M1 → M2 → M3 → M4 → M5) on the <a href="index.html">main site</a>.</li>
+            <li><strong>Return here</strong> whenever you encounter a pattern you recognise — cache-aside, rate limiting, health checks — and see how it fits into the larger architecture.</li>
+          </ol>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Character Metaphor ──────────────────────────────────────────────── -->
+    <div class="encyc-section">
+      <button class="encyc-section-header" aria-expanded="false"
+        onclick="this.parentElement.classList.toggle('collapsed'); this.setAttribute('aria-expanded', String(!this.parentElement.classList.contains('collapsed')));">
+        <span class="encyc-section-icon">🧪</span>
+        <span class="encyc-section-title">The Character Metaphor</span>
+        <span class="encyc-section-chevron">▾</span>
+      </button>
+      <div class="encyc-section-body">
+        <div class="encyc-section-body-inner">
+
+          <p>
+            The Rick and Morty framing isn't just decorative — it gives every
+            architectural component a personality that makes the stack easier to
+            reason about:
+          </p>
+
+          <div class="table-responsive">
+            <table class="table table-sm" style="font-size:0.87rem;">
+              <thead>
+                <tr><th style="width:15%;">Character</th><th style="width:20%;">Maps To</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Rick Sanchez</strong></td>
+                  <td>.NET API Layer</td>
+                  <td>Hyper-intelligent, does all the heavy lifting, owns the logic, talks to the outside world. Builds portal guns from scrap — like a well-factored middleware pipeline.</td>
+                </tr>
+                <tr>
+                  <td><strong>Morty Smith</strong></td>
+                  <td>Node.js Frontend</td>
+                  <td>What users actually see. Anxious but functional. Inseparable from Rick — the frontend can't function without the API. His brainwaves cancel out Rick's genius — the UI simplifies the backend's complexity for human consumption.</td>
+                </tr>
+                <tr>
+                  <td><strong>The Garage</strong></td>
+                  <td>PostgreSQL</td>
+                  <td>Where everything gets stored between adventures. Messy, chaotic, but contains every artifact from every timeline — like a database with full history and full-text search.</td>
+                </tr>
+                <tr>
+                  <td><strong>Portal Gun</strong></td>
+                  <td>HTTP / REST</td>
+                  <td>Instant transport between dimensions — like an API call that fetches data from any endpoint in the universe.</td>
+                </tr>
+                <tr>
+                  <td><strong>Council of Ricks</strong></td>
+                  <td>Kubernetes Cluster</td>
+                  <td>Multiple Ricks coordinating across dimensions. Each one is autonomous but governed by shared rules — like pods in a cluster managed by the control plane.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3">
+            <em>"Nobody exists on purpose. Nobody belongs anywhere. Everybody's gonna die. Come deploy Kubernetes."</em>
+            — Rick Sanchez, probably
+          </p>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Footer ────────────────────────────────────────────────────────────── -->
+  <footer class="page-footer">
+    <p>
+      <strong>k3s-pi5</strong> — a DevOps learning platform by
+      <a href="https://github.com/BaiGanio" target="_blank" rel="noopener">BaiGanio</a>.
+      <br>
+      <a href="index.html">← Back to the playground</a> &nbsp;·&nbsp;
+      <a href="README.md">Full README reference</a> &nbsp;·&nbsp;
+      <a href="https://github.com/BaiGanio/k3s-pi5" target="_blank" rel="noopener">GitHub repo</a>
+    </p>
+    <p style="font-size:0.75rem; opacity:0.7;">
+      Rick and Morty characters and imagery belong to Adult Swim / Justin Roiland / Dan Harmon.
+      This project is for educational purposes only.
+    </p>
+  </footer>
+
+  <!-- ── Scripts ───────────────────────────────────────────────────────────── -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Dark mode toggle (same logic as the main site) -->
+  <script>
+    (function () {
+      const KEY = 'theme-preference';
+      const toggle = document.getElementById('theme-toggle');
+      const icon = document.getElementById('theme-icon');
+
+      function isDark() { return localStorage.getItem(KEY) === 'dark'; }
+      function apply(dark) {
+        document.documentElement.classList.toggle('dark', dark);
+        if (icon) icon.className = dark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+        localStorage.setItem(KEY, dark ? 'dark' : 'light');
+      }
+      apply(isDark());
+      if (toggle) toggle.addEventListener('click', () => apply(!isDark()));
+    })();
+  </script>
+
+  <!-- Collapse all sections except the first few on load -->
+  <script>
+    (function () {
+      // First 4 sections: open. Rest: collapsed.
+      document.querySelectorAll('.encyc-section').forEach((el, i) => {
+        if (i >= 4) {
+          el.classList.add('collapsed');
+          const header = el.querySelector('.encyc-section-header');
+          if (header) header.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // Wire up toggle for any sections that might have been missed
+      document.querySelectorAll('.encyc-section-header').forEach(header => {
+        if (!header.hasAttribute('data-wired')) {
+          header.setAttribute('data-wired', '');
+          // Already handled inline via onclick — this is a safety net
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>
