@@ -1,5 +1,0 @@
----
-- hosts: grp-webservers
-  become: true
-  roles:
-    - apache-web-server
