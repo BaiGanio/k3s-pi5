@@ -168,15 +168,15 @@ window.commandData = [
   {
     id: 300, section: "kubectl", sectionTitle: "kubectl from MacBook",
     commandTitle: "Copy kubeconfig from Pi to MacBook",
-    command: "scp pi@raspberrypi:/etc/rancher/k3s/k3s.yaml ~/.kube/config-pi5",
-    searchTerms: "scp copy kubeconfig mac pi k3s remote access",
-    description: "Securely copies (scp) the kubeconfig file from the Pi to your MacBook so kubectl on your Mac can control the cluster.",
+    command: "ssh pi@raspberrypi \"sudo cat /etc/rancher/k3s/k3s.yaml\" > ~/.kube/config-pi5",
+    searchTerms: "scp ssh cat copy kubeconfig mac pi k3s remote access permission denied",
+    description: "Copies the kubeconfig from the Pi to your MacBook so kubectl on your Mac can control the cluster. It uses <code>sudo cat</code> over SSH because <code>/etc/rancher/k3s/k3s.yaml</code> is mode 600 and owned by root — a plain <code>scp pi@...</code> fails with <em>Permission denied</em>.",
     parts: [
-      { text: "scp", explanation: "secure copy over SSH" },
-      { text: "pi@raspberrypi:/etc/rancher/k3s/k3s.yaml", explanation: "source: the k3s-generated kubeconfig on the Pi" },
-      { text: "~/.kube/config-pi5", explanation: "destination: a dedicated config file on your MacBook" }
+      { text: "ssh pi@raspberrypi \"sudo cat ...\"", explanation: "runs cat as root on the Pi over SSH — the only way to read the root-owned kubeconfig without changing its permissions" },
+      { text: "/etc/rancher/k3s/k3s.yaml",            explanation: "source: the k3s-generated kubeconfig on the Pi" },
+      { text: "> ~/.kube/config-pi5",                 explanation: "redirects the output into a dedicated config file on your MacBook" }
     ],
-    example: "k3s.yaml   100% 2951     1.4MB/s   00:00",
+    example: "# No output on success — check it landed:\nhead -3 ~/.kube/config-pi5\n# apiVersion: v1\n# clusters:\n# - cluster:\n\n# Alternative: install k3s with --write-kubeconfig-mode 644, then plain scp works:\n#   curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644",
     why: "Having kubectl on your MacBook means you can manage the Pi without SSHing in. Use KUBECONFIG=~/.kube/config-pi5 kubectl get nodes."
   },
   {

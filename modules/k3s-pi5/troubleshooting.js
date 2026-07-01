@@ -66,6 +66,19 @@ window.commandData = [
     ],
     example: "# If Postgres is using too much memory, tune it:\n# Add to postgres container env:\n# - name: POSTGRES_INITDB_ARGS\n#   value: \"-c shared_buffers=64MB -c max_connections=20\"\n\n# Scale down non-essential deployments:\nkubectl scale deployment nginx-welcome --replicas=0",
     why: "PostgreSQL defaults are tuned for servers with GBs of RAM. On the Pi, explicitly limit shared_buffers or pods will get OOMKilled under load."
+  },
+  {
+    id: 705, section: "troubleshooting", sectionTitle: "Troubleshooting",
+    commandTitle: "Debug: Dashboard Unreachable (End-to-End Checklist)",
+    command: "curl -s \"https://1.1.1.1/dns-query?name=dashboard.yourdomain.com&type=CNAME\" -H \"accept: application/dns-json\" | jq '.Answer' && echo '--- local ingress ---' && curl -sI -H \"Host: dashboard.yourdomain.com\" http://localhost/",
+    searchTerms: "dashboard not loading unreachable 500 dns cname serverstransport ivan ip sans checklist delete recreate stale reference stuck",
+    description: "Works the dashboard path from the outside in — the two most common failures are on <b>different layers</b>, so check them separately. Layer 1 (DNS): does the hostname resolve to the tunnel? Layer 2 (ingress/TLS): does Traefik return the dashboard HTML locally, or a 500?",
+    parts: [
+      { text: "curl .../dns-query ... | jq '.Answer'", explanation: "DNS check — a non-null Answer with data '<uuid>.cfargotunnel.com' means the wildcard/route CNAME exists. null/empty = no DNS record, traffic never reaches the Pi" },
+      { text: "curl -sI -H \"Host: dashboard...\" http://localhost/", explanation: "ingress check — bypasses Cloudflare and hits Traefik directly. Want HTTP 200 (dashboard HTML). A 500 means the backend TLS handshake failed" }
+    ],
+    example: "# ✅ Healthy — Answer present + local 200:\n[ { \"name\": \"dashboard.yourdomain.com\", \"data\": \"48d8...cfargotunnel.com\" } ]\n--- local ingress ---\nHTTP/1.1 200 OK\n\n# ❌ Answer is null → DNS missing. Create the route:\ncloudflared tunnel route dns <tunnel-name> dashboard.yourdomain.com\n#   (or add a wildcard CNAME '*' → <uuid>.cfargotunnel.com, Proxied ON)\n\n# ❌ Local curl returns 500 (x509 ... doesn't contain any IP SANs):\n#   The dashboard's self-signed cert isn't being trusted. The Ingress needs\n#   BOTH annotations + a ServersTransport with insecureSkipVerify:\n#     traefik.ingress.kubernetes.io/service.serversscheme: https\n#     traefik.ingress.kubernetes.io/service.serverstransport: kubernetes-dashboard-dashboard-transport@kubernetescrd\n#   Check the CRD group first: sudo k3s kubectl get crd | grep serverstransport\n\n# ❌ Local curl STILL returns 500 (x509) even though the annotations AND the\n#    ServersTransport (with insecureSkipVerify: true) are all present and correct:\n#   The Ingress can hold a stale ServersTransport reference that never re-resolves —\n#   Traefik silently falls back to its DEFAULT transport, which verifies the cert.\n#   Editing/re-applying the Ingress in place does not always fix it. Delete and\n#   recreate it so Traefik re-reads the reference from scratch:\n#     sudo k3s kubectl -n kubernetes-dashboard delete ingress kubernetes-dashboard\n#     # then re-apply the dashboard Ingress (see the k3s Dashboard article)\n\n# ❌ Local curl returns 'service not found' in Traefik logs:\n#   The Ingress is in the wrong namespace. It MUST live in kubernetes-dashboard\n#   (same namespace as the Service), not default.\nsudo k3s kubectl get ingress -A",
+    why: "The dashboard breaks in two independent places and people conflate them. If DNS resolves but you still can't load it, stop looking at Cloudflare — the problem is the ingress/ServersTransport on the Pi. If the local curl returns 200 but the browser can't reach it, stop looking at the cluster — the problem is DNS or the tunnel. This one command tells you which half to debug. And if the local curl 500s with a picture-perfect config, the reference itself is stuck — delete and recreate the Ingress rather than editing it in place."
   }
-  
+
 ];

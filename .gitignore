@@ -10,7 +10,7 @@
 *.userosscache
 *.sln.docstates
 *.env
-*.deepseek/
+*.codewhale/
 *.claude/
 *.vagrant/
 notes/

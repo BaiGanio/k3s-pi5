@@ -1,5 +1,49 @@
 window.commandData = [
 
+  // ── Pre-flight checks ─────────────────────────────────────
+  {
+    id: 97, section: "preflight", sectionTitle: "Pre-flight Checks",
+    commandTitle: "Check for cloudflared Updates",
+    command: "LOCAL=$(cloudflared --version 2>/dev/null | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+' | head -1); LATEST=$(curl -s https://api.github.com/repos/cloudflare/cloudflared/releases/latest | jq -r .tag_name); echo \"Installed: ${LOCAL:-none}  |  Latest: $LATEST\"; if [ -n \"$LOCAL\" ] && [ \"$LOCAL\" != \"$LATEST\" ]; then echo \"\"; echo \"⚠️  Update available — run:\"; echo \"  wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 && chmod +x cloudflared-linux-arm64 && sudo mv cloudflared-linux-arm64 /usr/local/bin/cloudflared\"; fi",
+    searchTerms: "cloudflared update upgrade version check latest outdated",
+    description: "Compares your installed cloudflared version against the latest GitHub release. If they differ, it prints the exact <code>wget</code> one-liner you need to update — no guesswork, just copy and paste.",
+    parts: [
+      { text: "cloudflared --version | grep -oE ...",    explanation: "extracts just the semver (e.g. 2026.5.0) from the version string" },
+      { text: "curl -s .../releases/latest | jq -r .tag_name", explanation: "fetches the latest release tag from GitHub's API — no auth required" },
+      { text: "[ \"$LOCAL\" != \"$LATEST\" ]",          explanation: "compares the two versions; if they differ, the block inside prints the update command" },
+      { text: "2>/dev/null",                             explanation: "suppresses errors if cloudflared isn't installed yet — LOCAL becomes 'none'" }
+    ],
+    example: "# Up to date:\nInstalled: 2026.6.1  |  Latest: 2026.6.1\n\n# Outdated:\nInstalled: 2026.5.0  |  Latest: 2026.6.1\n\n⚠️  Update available — run:\n  wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 && chmod +x cloudflared-linux-arm64 && sudo mv cloudflared-linux-arm64 /usr/local/bin/cloudflared",
+    why: "cloudflared logs a warning at startup when outdated but won't refuse to run. Catching it here prevents the 'WRN Your version X is outdated' surprise in journalctl later. The update command is the same as the install command — download, chmod, move."
+  },
+  {
+    id: 98, section: "preflight", sectionTitle: "Pre-flight Checks",
+    commandTitle: "Check if cloudflared Is Installed",
+    command: "which cloudflared && cloudflared --version || echo 'cloudflared NOT installed'",
+    searchTerms: "cloudflared installed check which version binary path",
+    description: "Checks whether the <code>cloudflared</code> binary exists on your PATH and prints its version. If not found, the <code>||</code> fallback prints a clear message instead of a cryptic error.",
+    parts: [
+      { text: "which cloudflared",     explanation: "locates the binary on PATH — returns the full path if found, empty if not" },
+      { text: "cloudflared --version", explanation: "prints the installed version — only runs if 'which' succeeded" },
+      { text: "|| echo '...'",         explanation: "fallback: runs only if the left side failed — tells you cloudflared isn't there" }
+    ],
+    example: "# Installed:\n/usr/local/bin/cloudflared\ncloudflared version 2024.10.0 (built 2024-10-01)\n\n# Not installed:\ncloudflared NOT installed",
+    why: "Skip the download step if cloudflared is already present. This also catches partial installs — if 'which' finds a broken binary, cloudflared --version will fail and the || branch fires."
+  },
+  {
+    id: 99, section: "preflight", sectionTitle: "Pre-flight Checks",
+    commandTitle: "List Existing Tunnels",
+    command: "cloudflared tunnel list",
+    searchTerms: "cloudflared tunnel list existing check status connections",
+    description: "Shows all tunnels registered in your Cloudflare account with their IDs, names, creation dates, and active connection counts. Run this before creating a new tunnel to avoid duplicates.",
+    parts: [
+      { text: "cloudflared tunnel list", explanation: "queries Cloudflare's API for all tunnels linked to your account" },
+      { text: "CONNECTIONS column",      explanation: "number of active edge connections — 0 means the tunnel exists but isn't running anywhere" }
+    ],
+    example: "ID                                   NAME    CREATED              CONNECTIONS\nabc123def456-7890-abcd-ef01-234567890abc  my-pi   2024-06-15T10:30:00Z  2xLHR\nxyz789ghi012-3456-wxyz-7890-123456789012  old-tun  2024-05-01T08:00:00Z  0\n\n# 0 CONNECTIONS = tunnel registered but not running\n# 2xLHR = 2 connections through London edge — healthy!",
+    why: "Creating a second tunnel with the same name will fail. If you already have a tunnel, you can skip 'tunnel create' and go straight to the config file — you just need the credentials JSON that was generated at creation time."
+  },
+
   // ── Cloudflare Tunnel ─────────────────────────────────────
   {
     id: 100, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
@@ -70,8 +114,22 @@ window.commandData = [
       { text: "- hostname: \"*.yourdomain.com\"",       explanation: "catches all subdomains — app.yourdomain.com, api.yourdomain.com, etc." },
       { text: "- service: http_status:404",             explanation: "catch-all: returns 404 for any unmapped hostname" }
     ],
-    example: "# ~/.cloudflared/config.yml\ntunnel: my-pi\ncredentials-file: /home/pi/.cloudflared/abc123def456.json\n\ningress:\n  - hostname: yourdomain.com\n    service: http://localhost/\n  - hostname: \"*.yourdomain.com\"\n    service: http://localhost/\n  - service: http_status:404",
+    example: "# ~/.cloudflared/config.yml\ntunnel: my-pi\ncredentials-file: /home/pi/.cloudflared/abc123def456.json\n\ningress:\n  - hostname: yourdomain.com\n    service: http://localhost\n  - hostname: \"*.yourdomain.com\"\n    service: http://localhost\n  - service: http_status:404",
     why: "Without this file, cloudflared doesn't know where to forward traffic. The wildcard hostname entry is what lets subdomains like api.yourdomain.com reach your Node.js services."
+  },
+  {
+    id: 108, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
+    commandTitle: "Route DNS to the Tunnel",
+    command: "cloudflared tunnel route dns my-pi dashboard.yourdomain.com",
+    searchTerms: "cloudflared tunnel route dns cname subdomain wildcard record 1016",
+    description: "Creates the DNS record that points a hostname at your tunnel. This is the step most people miss: <code>config.yml</code> only <em>routes</em> traffic once it reaches the Pi, but the hostname still needs a CNAME to <code>&lt;tunnel-id&gt;.cfargotunnel.com</code> or the request never leaves Cloudflare's edge. Run it once per subdomain you expose.",
+    parts: [
+      { text: "cloudflared tunnel route dns", explanation: "creates a proxied CNAME in Cloudflare DNS pointing the hostname at this tunnel" },
+      { text: "my-pi",                        explanation: "the tunnel name (or UUID) the record should point to" },
+      { text: "dashboard.yourdomain.com",     explanation: "the exact hostname to route — run again for api.yourdomain.com, etc." }
+    ],
+    example: "# One record per subdomain you use:\ncloudflared tunnel route dns my-pi dashboard.yourdomain.com\ncloudflared tunnel route dns my-pi api.yourdomain.com\n# INF Added CNAME dashboard.yourdomain.com which will route to this tunnel...\n\n# Want one wildcard instead? cloudflared can't create wildcard records —\n# add it by hand in the Cloudflare dashboard (DNS → Records):\n#   Type: CNAME   Name: *   Target: <tunnel-id>.cfargotunnel.com   Proxied: ON\n\n# Verify it resolves to the tunnel:\ndig +short dashboard.yourdomain.com",
+    why: "If the browser shows a Cloudflare 1016 / DNS error, or the request simply never reaches the Pi, this missing CNAME is almost always why. The wildcard '*.yourdomain.com' block in config.yml does nothing until a matching wildcard CNAME exists in DNS."
   },
   {
     id: 105, section: "cloudflare", sectionTitle: "Cloudflare Tunnel",
