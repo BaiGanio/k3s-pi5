@@ -1,0 +1,8 @@
+---
+# Namespace for all BGAPI resources
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bgapi
+  labels:
+    app.kubernetes.io/part-of: bgapi

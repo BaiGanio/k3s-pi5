@@ -1,0 +1,17 @@
+# bgapi-watch.timer — runs watch-deploy.sh every 5 minutes.
+#
+# The service only rebuilds when new commits exist, so the 5-minute
+# poll interval is cheap (a `git fetch` + SHA compare, ~1 second).
+# Increase OnUnitActiveSec if you want less frequent polling.
+[Unit]
+Description=BGAPI git watcher — poll every 5 minutes
+Requires=bgapi-watch.service
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=300
+RandomizedDelaySec=30
+Unit=bgapi-watch.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,115 @@
+---
+# SQL Server (Azure SQL Edge) — StatefulSet with persistent storage.
+#
+# Azure SQL Edge is the only Microsoft SQL engine with an ARM64 build.
+# Same T-SQL dialect and EF Core provider as full SQL Server — no code changes.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sqlserver
+  namespace: bgapi
+  labels:
+    app: sqlserver
+    app.kubernetes.io/part-of: bgapi
+spec:
+  type: ClusterIP
+  clusterIP: None          # Headless — StatefulSet pods get stable DNS
+  ports:
+    - port: 1433
+      targetPort: 1433
+      name: mssql
+  selector:
+    app: sqlserver
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sqlserver
+  namespace: bgapi
+  labels:
+    app: sqlserver
+    app.kubernetes.io/part-of: bgapi
+spec:
+  serviceName: sqlserver
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sqlserver
+  template:
+    metadata:
+      labels:
+        app: sqlserver
+    spec:
+      containers:
+        - name: sqlserver
+          image: mcr.microsoft.com/azure-sql-edge:latest
+          ports:
+            - containerPort: 1433
+              name: mssql
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bgapi-secrets
+                  key: sa-password
+            - name: MSSQL_PID
+              value: "Developer"
+            # Limit memory — Azure SQL Edge can be greedy. 2 GB is plenty.
+            - name: MSSQL_MEMORY_LIMIT_MB
+              value: "2048"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2.5Gi"
+              cpu: "2000m"
+          volumeMounts:
+            - name: data
+              mountPath: /var/opt/mssql
+          readinessProbe:
+            exec:
+              command:
+                - /opt/mssql-tools18/bin/sqlcmd
+                - -S
+                - localhost
+                - -U
+                - sa
+                - -P
+                - $(MSSQL_SA_PASSWORD)
+                - -C
+                - -Q
+                - "SELECT 1"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            exec:
+              command:
+                - /opt/mssql-tools18/bin/sqlcmd
+                - -S
+                - localhost
+                - -U
+                - sa
+                - -P
+                - $(MSSQL_SA_PASSWORD)
+                - -C
+                - -Q
+                - "SELECT 1"
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/part-of: bgapi
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
