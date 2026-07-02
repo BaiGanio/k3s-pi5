@@ -88,15 +88,96 @@
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-secondary);
-  margin: 0 0 0.2rem;
+  margin: 0;
 }
 
-/* "Where it runs" line under each group heading on the welcome screen */
+/* ── Collapsible welcome sections (mirror the sidebar accordion) ──────────── */
+.welcome-section {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+
+.welcome-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+.welcome-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+.welcome-section-header:hover {
+  background: var(--bg-surface);
+}
+.welcome-section-header:hover .welcome-section-label {
+  color: var(--text-primary);
+}
+.welcome-section-header:hover .welcome-section-chevron {
+  color: var(--text-primary);
+}
+.welcome-section-header:hover .welcome-section-count {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* Nudge the chevron on hover to hint interactivity */
+.welcome-section.collapsed .welcome-section-header:hover .welcome-section-chevron {
+  transform: rotate(-90deg) translateX(2px);
+}
+
+.welcome-section-count {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  line-height: 1.4;
+}
+
+.welcome-section-chevron {
+  margin-left: auto;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+.welcome-section.collapsed .welcome-section-chevron {
+  transform: rotate(-90deg);
+}
+
+.welcome-section-body {
+  overflow: hidden;
+  max-height: 4000px;
+  transition: max-height 0.3s ease;
+}
+.welcome-section.collapsed .welcome-section-body {
+  max-height: 0;
+}
+
+.welcome-section-body-inner {
+  padding-top: 0.25rem;
+}
+
+/* "Where it runs" line under each group heading on the welcome screen.
+   Lives inside the header so it stays visible even when collapsed. */
 .welcome-section-blurb {
+  display: block;
   font-size: 0.78rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--text-secondary);
   opacity: 0.85;
-  margin: 0 0 0.75rem;
+  margin: 0;
   line-height: 1.5;
   /* max-width: 60ch; */
 }
@@ -118,7 +199,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .welcome-card {
