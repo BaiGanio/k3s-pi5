@@ -18,6 +18,15 @@ window.pageBlocks = [
         running on port 80 of your Pi.
       </p>
       <p>
+        <strong>This module is written against a live setup:</strong> the tunnel
+        <code>3i-atlas</code> (ID <code>c8a4afad-c3bc-4b46-a1b9-1650cbc7fd52</code>) fronting
+        <code>baiganio.io</code>. Because the tunnel dials outbound, a change to the Pi's LAN IP
+        (after a reboot or power cut) does <em>not</em> break it — <code>cloudflared</code> never
+        cares what its local address is. What an IP change breaks is your SSH access to the Pi
+        and any config that pins a hard IP; keep services on <code>localhost</code> and the tunnel
+        rides through it untouched.
+      </p>
+      <p>
         The result: no port forwarding, no static public IP, no firewall holes. Your router
         stays closed, and Cloudflare's network sits in front as TLS, DDoS protection, and a
         stable public hostname.
@@ -131,7 +140,7 @@ window.pageBlocks = [
           { text: "cloudflared tunnel list", explanation: "queries Cloudflare's API for all tunnels linked to your account" },
           { text: "CONNECTIONS column",      explanation: "number of active edge connections — 0 means the tunnel exists but isn't running anywhere" }
         ],
-        example: "ID                                   NAME    CREATED              CONNECTIONS\nabc123def456-7890-abcd-ef01-234567890abc  my-pi   2024-06-15T10:30:00Z  2xLHR\nxyz789ghi012-3456-wxyz-7890-123456789012  old-tun  2024-05-01T08:00:00Z  0\n\n# 0 CONNECTIONS = tunnel registered but not running\n# 2xLHR = 2 connections through London edge — healthy!",
+        example: "ID                                   NAME    CREATED              CONNECTIONS\nabc123def456-7890-abcd-ef01-234567890abc  3i-atlas   2024-06-15T10:30:00Z  2xLHR\nxyz789ghi012-3456-wxyz-7890-123456789012  old-tun  2024-05-01T08:00:00Z  0\n\n# 0 CONNECTIONS = tunnel registered but not running\n# 2xLHR = 2 connections through London edge — healthy!",
         why: "Creating a second tunnel with the same name will fail. If you already have a tunnel, you can skip 'tunnel create' and go straight to the config file — you just need the credentials JSON that was generated at creation time."
       },
     ],
@@ -193,35 +202,35 @@ window.pageBlocks = [
           { text: "tunnel",      explanation: "subcommand for tunnel operations" },
           { text: "login",       explanation: "authenticate with your Cloudflare account" }
         ],
-        example: "Please open the following URL and log in with your Cloudflare account:\nhttps://dash.cloudflare.com/argotunnel?...\n\n# After login:\nYou have successfully logged in.\nIf you wish to copy your credentials to a server, they have been saved to:\n/home/pi/.cloudflared/cert.pem",
+        example: "Please open the following URL and log in with your Cloudflare account:\nhttps://dash.cloudflare.com/argotunnel?...\n\n# After login:\nYou have successfully logged in.\nIf you wish to copy your credentials to a server, they have been saved to:\n/home/lk/.cloudflared/cert.pem",
         why: "The certificate proves you own the Cloudflare account. Without it, tunnel creation will be rejected."
       },
       {
         id: 102,
         commandTitle: "Create a Tunnel",
-        command: "cloudflared tunnel create my-pi",
+        command: "cloudflared tunnel create 3i-atlas",
         searchTerms: "cloudflared tunnel create name credentials json",
-        description: "Creates a named tunnel. \"my-pi\" is just a label — pick something meaningful. Generates a unique credentials JSON file for this tunnel.",
+        description: "Creates a named tunnel. \"3i-atlas\" is just a label — pick something meaningful. Generates a unique credentials JSON file for this tunnel.",
         parts: [
           { text: "cloudflared tunnel create", explanation: "registers a new tunnel in your Cloudflare account" },
-          { text: "my-pi",                     explanation: "the name you choose — used to reference this tunnel later" }
+          { text: "3i-atlas",                     explanation: "the name you choose — used to reference this tunnel later" }
         ],
-        example: "Tunnel credentials written to /home/pi/.cloudflared/abc123def456.json\nTunnel my-pi created with ID abc123def456",
+        example: "Tunnel credentials written to /home/lk/.cloudflared/c8a4afad-c3bc-4b46-a1b9-1650cbc7fd52.json\nTunnel 3i-atlas created with ID c8a4afad-c3bc-4b46-a1b9-1650cbc7fd52",
         why: "Each tunnel gets unique credentials. You reference this name in config.yml and when running the tunnel."
       },
       {
         id: 103,
         commandTitle: "Save Tunnel ID to Variable",
-        command: "TUNNEL_ID=$(cloudflared tunnel list | grep my-pi | awk '{print $1}')\necho $TUNNEL_ID",
+        command: "TUNNEL_ID=$(cloudflared tunnel list | grep 3i-atlas | awk '{print $1}')\necho $TUNNEL_ID",
         searchTerms: "tunnel id save variable awk grep",
         description: "Captures the tunnel UUID into a shell variable so you can use it in the config file without copy-pasting.",
         parts: [
           { text: "cloudflared tunnel list", explanation: "lists all tunnels in your account" },
-          { text: "grep my-pi",             explanation: "filters to only the row for your tunnel" },
+          { text: "grep 3i-atlas",             explanation: "filters to only the row for your tunnel" },
           { text: "awk '{print $1}'",       explanation: "extracts the first column — the UUID" },
           { text: "echo $TUNNEL_ID",        explanation: "prints the captured value to confirm it" }
         ],
-        example: "abc123def456-7890-abcd-ef01-234567890abc",
+        example: "c8a4afad-c3bc-4b46-a1b9-1650cbc7fd52",
         why: "The credentials file is named after the UUID, not the tunnel name. You need this to write the config.yml correctly."
       },
       {
@@ -229,40 +238,41 @@ window.pageBlocks = [
         commandTitle: "Create Tunnel Config File",
         command: "nano ~/.cloudflared/config.yml",
         searchTerms: "config yml cloudflared ingress hostname service",
-        description: "Creates the tunnel routing config. Maps your Cloudflare domain(s) to the k3s Traefik ingress running on port 80 of the Pi.",
+        description: "Creates the tunnel routing config. This setup uses <strong>explicit per-host entries</strong> (not a wildcard) — one line per hostname, each mapped to the k3s Traefik ingress on port 80. The non-HTTP routes (<code>ssh://</code> for <code>ssh.baiganio.io</code>, <code>tcp://</code> for the databases) are added in the <strong>Cloudflare Tunnel — TCP, Databases & SSH</strong> module and must sit <em>above</em> these HTTP entries.",
         parts: [
-          { text: "tunnel: my-pi",                          explanation: "must match the tunnel name you created" },
-          { text: "credentials-file:",                      explanation: "path to the JSON file generated by tunnel create" },
-          { text: "- hostname: yourdomain.com",             explanation: "routes root domain to your local k3s Traefik ingress" },
-          { text: "- hostname: \"*.yourdomain.com\"",       explanation: "catches all subdomains — app.yourdomain.com, api.yourdomain.com, etc." },
-          { text: "- service: http_status:404",             explanation: "catch-all: returns 404 for any unmapped hostname" }
+          { text: "tunnel: 3i-atlas",                        explanation: "must match the tunnel name you created" },
+          { text: "credentials-file:",                       explanation: "path to the JSON file generated by tunnel create — named by the tunnel UUID" },
+          { text: "- hostname: baiganio.io",                 explanation: "routes the root domain to your local k3s Traefik ingress" },
+          { text: "- hostname: dashboard.baiganio.io",       explanation: "the k3s dashboard — one explicit entry, no wildcard" },
+          { text: "- hostname: api.baiganio.io",             explanation: "BGAPI (.NET) — Traefik matches this Host and forwards to the bgapi Service on :62010" },
+          { text: "- service: http_status:404",              explanation: "catch-all: returns 404 for any unmapped hostname" }
         ],
-        example: "# ~/.cloudflared/config.yml\ntunnel: my-pi\ncredentials-file: /home/pi/.cloudflared/abc123def456.json\n\ningress:\n  - hostname: yourdomain.com\n    service: http://localhost\n  - hostname: \"*.yourdomain.com\"\n    service: http://localhost\n  - service: http_status:404",
-        why: "Without this file, cloudflared doesn't know where to forward traffic. The wildcard hostname entry is what lets subdomains like api.yourdomain.com reach your Node.js services."
+        example: "# ~/.cloudflared/config.yml\ntunnel: 3i-atlas\ncredentials-file: /home/lk/.cloudflared/c8a4afad-c3bc-4b46-a1b9-1650cbc7fd52.json\n\ningress:\n  # ── HTTP services → Traefik on port 80 ──\n  - hostname: baiganio.io\n    service: http://localhost:80\n  - hostname: dashboard.baiganio.io\n    service: http://localhost:80\n  - hostname: api.baiganio.io          # BGAPI .NET → Traefik → bgapi svc :62010\n    service: http://localhost:80\n  # ── Catch-all ──\n  - service: http_status:404\n\n# NOTE: ssh:// and tcp:// (db/pg) entries go ABOVE the HTTP block —\n# see the 'Cloudflare Tunnel — TCP, Databases & SSH' module.",
+        why: "Without this file, cloudflared doesn't know where to forward traffic. This deployment uses explicit per-host entries because the DNS side is explicit per-host CNAMEs too (no wildcard CNAME exists) — so each hostname you expose needs both a line here AND a matching DNS route (next card). api.baiganio.io reaches the BGAPI Traefik IngressRoute this way."
       },
       {
         id: 108,
         commandTitle: "Route DNS to the Tunnel",
-        command: "cloudflared tunnel route dns my-pi dashboard.yourdomain.com",
+        command: "cloudflared tunnel route dns 3i-atlas dashboard.baiganio.io",
         searchTerms: "cloudflared tunnel route dns cname subdomain wildcard record 1016",
         description: "Creates the DNS record that points a hostname at your tunnel. This is the step most people miss: <code>config.yml</code> only <em>routes</em> traffic once it reaches the Pi, but the hostname still needs a CNAME to <code>&lt;tunnel-id&gt;.cfargotunnel.com</code> or the request never leaves Cloudflare's edge. Run it once per subdomain you expose.",
         parts: [
           { text: "cloudflared tunnel route dns", explanation: "creates a proxied CNAME in Cloudflare DNS pointing the hostname at this tunnel" },
-          { text: "my-pi",                        explanation: "the tunnel name (or UUID) the record should point to" },
-          { text: "dashboard.yourdomain.com",     explanation: "the exact hostname to route — run again for api.yourdomain.com, etc." }
+          { text: "3i-atlas",                        explanation: "the tunnel name (or UUID) the record should point to" },
+          { text: "dashboard.baiganio.io",     explanation: "the exact hostname to route — run again for api.baiganio.io, etc." }
         ],
-        example: "# One record per subdomain you use:\ncloudflared tunnel route dns my-pi dashboard.yourdomain.com\ncloudflared tunnel route dns my-pi api.yourdomain.com\n# INF Added CNAME dashboard.yourdomain.com which will route to this tunnel...\n\n# Want one wildcard instead? cloudflared can't create wildcard records —\n# add it by hand in the Cloudflare dashboard (DNS → Records):\n#   Type: CNAME   Name: *   Target: <tunnel-id>.cfargotunnel.com   Proxied: ON\n\n# Verify it resolves to the tunnel:\ndig +short dashboard.yourdomain.com",
-        why: "If the browser shows a Cloudflare 1016 / DNS error, or the request simply never reaches the Pi, this missing CNAME is almost always why. The wildcard '*.yourdomain.com' block in config.yml does nothing until a matching wildcard CNAME exists in DNS."
+        example: "# This deployment routes every hostname explicitly — one command each:\ncloudflared tunnel route dns 3i-atlas baiganio.io\ncloudflared tunnel route dns 3i-atlas dashboard.baiganio.io\ncloudflared tunnel route dns 3i-atlas api.baiganio.io\ncloudflared tunnel route dns 3i-atlas ssh.baiganio.io\ncloudflared tunnel route dns 3i-atlas db.baiganio.io\ncloudflared tunnel route dns 3i-atlas pg.baiganio.io\n# INF Added CNAME dashboard.baiganio.io which will route to this tunnel...\n\n# If a hostname already has a stale CNAME (e.g. after deleting/recreating the\n# tunnel), route dns refuses to overwrite it — delete the old record in the\n# Cloudflare dashboard (DNS → Records) first, then re-run.\n\n# Verify it resolves to the tunnel:\ndig +short dashboard.baiganio.io",
+        why: "If the browser shows a Cloudflare 1016 / DNS error, or the request simply never reaches the Pi, this missing CNAME is almost always why. Because baiganio.io uses explicit per-host CNAMEs (not a wildcard), every hostname in config.yml — including ssh, db and pg from the TCP module — needs its own route dns command."
       },
       {
         id: 105,
         commandTitle: "Test Tunnel Manually",
-        command: "cloudflared tunnel run my-pi",
+        command: "cloudflared tunnel run 3i-atlas",
         searchTerms: "cloudflared tunnel run test connection edge",
         description: "Starts the tunnel in the foreground to verify connectivity before setting up a systemd service. Press Ctrl+C to stop.",
         parts: [
           { text: "cloudflared tunnel run", explanation: "connects the tunnel to Cloudflare's edge network" },
-          { text: "my-pi",                  explanation: "the tunnel name to run" }
+          { text: "3i-atlas",                  explanation: "the tunnel name to run" }
         ],
         example: "2024/01/01 10:00:00 INF Starting tunnel tunnelID=abc123\n2024/01/01 10:00:01 INF Registered tunnel connection connIndex=0 ip=198.41.200.x\n2024/01/01 10:00:01 INF Connection abc123 registered with protocol=h2mux",
         why: "Always test manually first. If this fails, your systemd service will also fail — and it's much easier to debug interactively."
@@ -275,11 +285,11 @@ window.pageBlocks = [
         description: "Creates a systemd unit so the tunnel starts automatically on boot and restarts on failure.",
         parts: [
           { text: "After=network.target",                    explanation: "ensures tunnel starts only after networking is up" },
-          { text: "ExecStart=... tunnel run my-pi",          explanation: "the command systemd runs to start the tunnel" },
+          { text: "ExecStart=... tunnel run 3i-atlas",          explanation: "the command systemd runs to start the tunnel" },
           { text: "Restart=on-failure",                      explanation: "automatically restarts if the process crashes" },
           { text: "RestartSec=5s",                           explanation: "waits 5 seconds before attempting a restart" }
         ],
-        example: "[Unit]\nDescription=Cloudflare Tunnel\nAfter=network.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=pi\nWorkingDirectory=/home/pi/.cloudflared\nExecStart=/usr/local/bin/cloudflared tunnel run my-pi\nRestart=on-failure\nRestartSec=5s\n\n[Install]\nWantedBy=multi-user.target",
+        example: "[Unit]\nDescription=Cloudflare Tunnel\nAfter=network.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=lk\nWorkingDirectory=/home/lk/.cloudflared\nExecStart=/usr/local/bin/cloudflared tunnel run 3i-atlas\nRestart=on-failure\nRestartSec=5s\n\n[Install]\nWantedBy=multi-user.target",
         why: "Without a systemd service the tunnel dies when your SSH session ends. This keeps it running 24/7."
       },
       {

@@ -1,0 +1,28 @@
+---
+# PostgreSQL (ScroogeCorp) — NodePort service for Cloudflare Tunnel access.
+#
+# Mirror of sqlserver-nodeport.yaml. The headless Service in postgres.yaml gives
+# the StatefulSet stable DNS but isn't on the host's localhost; cloudflared runs
+# on the host, so it needs this NodePort to reach Postgres. Publishes 5432 on the
+# node as 30432, for the tunnel route
+#   tcp://localhost:30432  ->  pg.baiganio.io
+#
+# SECURITY: same as the SQL Server NodePort — reachable on the LAN and, via the
+# tunnel, publicly resolvable. Gate pg.baiganio.io with a Cloudflare Access policy.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-nodeport
+  namespace: bgapi
+  labels:
+    app: postgres
+    app.kubernetes.io/part-of: bgapi
+spec:
+  type: NodePort
+  ports:
+    - port: 5432
+      targetPort: 5432
+      nodePort: 30432
+      name: postgres
+  selector:
+    app: postgres

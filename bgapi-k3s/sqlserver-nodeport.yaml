@@ -1,0 +1,30 @@
+---
+# SQL Server (Azure SQL Edge) — NodePort service for Cloudflare Tunnel access.
+#
+# The headless Service in sqlserver.yaml (clusterIP: None) gives the StatefulSet
+# stable in-cluster DNS, but it is NOT reachable on the Pi host's localhost — and
+# cloudflared runs on the host, dialling localhost:<port>. This extra NodePort
+# Service publishes 1433 on the node as 31433, so the tunnel route
+#   tcp://localhost:31433  ->  db.baiganio.io
+# has something to hit. A headless Service can't be a NodePort, so this is a
+# second Service pointing at the same pods (selector app: sqlserver).
+#
+# SECURITY: a NodePort is reachable by anything on the LAN, and the tunnel makes
+# db.baiganio.io publicly resolvable — keep it behind a Cloudflare Access policy.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sqlserver-nodeport
+  namespace: bgapi
+  labels:
+    app: sqlserver
+    app.kubernetes.io/part-of: bgapi
+spec:
+  type: NodePort
+  ports:
+    - port: 1433
+      targetPort: 1433
+      nodePort: 31433
+      name: mssql
+  selector:
+    app: sqlserver
