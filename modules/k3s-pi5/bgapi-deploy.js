@@ -530,6 +530,57 @@ window.pageBlocks = [
     ],
   },
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION: POLL-BASED CD (alternative to webhook)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  {
+    type: 'prose',
+    title: 'Alternative: Poll-Based CD (no tunnel required)',
+    content: `
+      <p>
+        <strong>Don't want to set up a webhook or tunnel?</strong> A systemd
+        timer that polls your git remote every 5 minutes is a simpler
+        alternative. The timer runs <code>watch-deploy.sh</code>, which does a
+        <code>git fetch</code>, compares SHAs, and only rebuilds when new
+        commits exist — each poll cycle is ~1 second when there's nothing to
+        do. This approach works entirely on the LAN: the Pi pulls from GitHub
+        (no inbound port needed), builds the Docker image locally, imports it
+        into k3s's containerd, and rolls out.
+      </p>
+      <p>
+        <strong>Trade-off:</strong> deploys are delayed by up to 5 minutes,
+        and a Docker build on the Pi takes 10–15 minutes. The webhook approach
+        (previous section) lands changes in seconds because the image is
+        pre-built on your Mac. Choose this if you want zero external
+        dependencies — no tunnel, no webhook binary, no Cloudflare DNS.
+      </p>
+    `,
+  },
+
+  {
+    type: 'commands',
+    section: 'bgapi-poll-cd',
+    sectionTitle: 'BGAPI · Poll-Based CD (systemd timer)',
+    items: [
+      {
+        id: 645,
+        commandTitle: 'Create the Watch-Deploy Script & Timer Units',
+        command: 'sudo systemctl enable --now bgapi-watch.timer',
+        searchTerms: 'watch-deploy poll timer systemd git fetch sha compare rebuild docker import containerd k3s ctr oneshot',
+        description: 'Creates three files inline: <code>watch-deploy.sh</code> (the poll-and-rebuild script), <code>bgapi-watch.service</code> (a oneshot systemd unit that runs it), and <code>bgapi-watch.timer</code> (fires every 5 minutes with a 30-second random jitter). The script is idempotent — if no new commits exist, it exits immediately without rebuilding.',
+        parts: [
+          { text: 'git fetch + SHA compare', explanation: 'the script stores the last-deployed SHA in .last-deployed-sha — only rebuilds when origin/dev has a new commit' },
+          { text: 'docker build + k3s ctr images import', explanation: 'the Pi builds the image locally (slow: 10–15 min), then imports it into containerd so k3s can use it' },
+          { text: 'OnUnitActiveSec=300', explanation: 'the timer fires every 5 minutes (300 seconds) after the last run completed' },
+          { text: 'RandomizedDelaySec=30', explanation: 'adds up to 30 seconds of random jitter so multiple Pis don\'t all hit GitHub at once' },
+        ],
+        example: "cd ~/bgapi-k3s\n\n# --- watch-deploy.sh ---\ncat > watch-deploy.sh <<'SCRIPT'\n#!/usr/bin/env bash\n# watch-deploy.sh — poll the git remote, rebuild on new commits, redeploy.\n#\n# Called by systemd timer every N minutes. Idempotent: if no new commits\n# exist, exits immediately without rebuilding. Stores the last-deployed SHA\n# in .last-deployed-sha so it survives reboots and timer cycles.\n\nset -euo pipefail\n\nREPO_DIR=\"${REPO_DIR:-/home/pi/BGAPI}\"\nSTATE_FILE=\"$REPO_DIR/.last-deployed-sha\"\nBRANCH=\"${WATCH_BRANCH:-dev}\"\nNAMESPACE=\"${NAMESPACE:-bgapi}\"\nKUBECTL=\"${KUBECTL:-kubectl}\"\n\nlog() { echo \"[$(date -Iseconds)] $*\"; }\n\ncd \"$REPO_DIR\" || { log \"ERROR: repo dir $REPO_DIR not found\"; exit 1; }\n\nlog \"Fetching origin/$BRANCH ...\"\ngit fetch origin \"$BRANCH\" 2>&1 || { log \"ERROR: git fetch failed\"; exit 1; }\n\nREMOTE_SHA=$(git rev-parse \"origin/$BRANCH\" 2>/dev/null)\nLAST_SHA=\"\"\nif [ -f \"$STATE_FILE\" ]; then\n  LAST_SHA=$(cat \"$STATE_FILE\")\nfi\n\nif [ \"$REMOTE_SHA\" = \"$LAST_SHA\" ]; then\n  log \"No new commits. HEAD: ${REMOTE_SHA:0:8}\"\n  exit 0\nfi\n\nlog \"NEW COMMITS: ${LAST_SHA:0:8} → ${REMOTE_SHA:0:8}\"\n\nlog \"Pulling $BRANCH ...\"\ngit checkout \"$BRANCH\" 2>&1\ngit pull origin \"$BRANCH\" 2>&1\n\nlog \"Building bgapi:local (this will take several minutes on a Pi) ...\"\ndocker build -f APIs/BGAPI/Dockerfile -t bgapi:local . 2>&1\n\nlog \"Importing image into k3s containerd ...\"\ndocker save bgapi:local | sudo k3s ctr images import - 2>&1\n\nlog \"Triggering rollout restart for deploy/bgapi ...\"\n\"$KUBECTL\" -n \"$NAMESPACE\" rollout restart deploy/bgapi 2>&1\n\nlog \"Waiting for rollout to complete ...\"\nif \"$KUBECTL\" -n \"$NAMESPACE\" rollout status deploy/bgapi --timeout=180s 2>&1; then\n  log \"Rollout successful.\"\nelse\n  log \"WARNING: rollout did not complete in time.\"\nfi\n\necho \"$REMOTE_SHA\" > \"$STATE_FILE\"\nlog \"Deployed $REMOTE_SHA — recorded to $STATE_FILE\"\nlog \"Done.\"\nSCRIPT\nchmod +x watch-deploy.sh\n\n# --- bgapi-watch.service (oneshot — runs once per timer tick) ---\ncat > bgapi-watch.service <<'EOF'\n[Unit]\nDescription=BGAPI — poll git remote and redeploy on new commits\nAfter=network-online.target docker.service\nWants=network-online.target docker.service\n\n[Service]\nType=oneshot\nUser=pi\nWorkingDirectory=/home/pi/BGAPI\nExecStart=/home/pi/bgapi-k3s/watch-deploy.sh\n\n# Log to journald\nStandardOutput=journal\nStandardError=journal\nSyslogIdentifier=bgapi-watch\n\n# Timeout: builds can take 15+ min on a Pi\nTimeoutStartSec=1800\nEOF\n\n# --- bgapi-watch.timer ---\ncat > bgapi-watch.timer <<'EOF'\n[Unit]\nDescription=BGAPI git watcher — poll every 5 minutes\nRequires=bgapi-watch.service\n\n[Timer]\nOnBootSec=60\nOnUnitActiveSec=300\nRandomizedDelaySec=30\nUnit=bgapi-watch.service\n\n[Install]\nWantedBy=timers.target\nEOF\n\n# Install and start the timer:\nsudo cp bgapi-watch.service /etc/systemd/system/\nsudo cp bgapi-watch.timer /etc/systemd/system/\nsudo systemctl daemon-reload\nsudo systemctl enable --now bgapi-watch.timer\n\n# Verify:\nsystemctl status bgapi-watch.timer\nsystemctl list-timers | grep bgapi",
+        why: "The timer-based approach has no external dependencies — no tunnel, no webhook binary, no Cloudflare DNS. The trade-off is speed: a Docker build on the Pi takes 10–15 minutes, so a push-to-live cycle is ~20 minutes. For faster deploys, use the webhook approach (previous section) which pulls a pre-built image in seconds.",
+      },
+    ],
+  },
+
   // ── Closing ────────────────────────────────────────────────────────────────
 
   {
