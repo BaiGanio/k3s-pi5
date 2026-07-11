@@ -128,6 +128,7 @@
   border-left-color: var(--sidebar-active-border);
   background: var(--sidebar-active-bg);
   font-weight: 600;
+  box-shadow: inset 4px 0 14px -6px rgba(125, 223, 144, 0.8);
 }
 
 .sidebar-module-btn.disabled {

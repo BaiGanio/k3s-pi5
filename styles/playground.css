@@ -20,9 +20,28 @@
   margin-bottom: 2.5rem;
 }
 
+#module-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.015em;
+  background: linear-gradient(92deg, var(--portal-dark), var(--accent-dark));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+html.dark #module-title {
+  background: linear-gradient(92deg, #7ddf90, #8fb3ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+#searchInput {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+}
 #searchInput:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(91, 138, 245, 0.18);
+  border-color: var(--portal);
+  box-shadow: 0 0 0 3px rgba(125, 223, 144, 0.22), 0 0 18px rgba(125, 223, 144, 0.15);
 }
 
 /* ── Back-to-overview breadcrumb ─────────────────────────────────────────── */
@@ -37,9 +56,11 @@
 }
 
 .filter-btn.active {
-  background: var(--accent) !important;
-  color: #fff !important;
-  border-color: var(--accent) !important;
+  background: var(--portal-gradient) !important;
+  color: #071336 !important;
+  border-color: transparent !important;
+  font-weight: 600;
+  box-shadow: 0 0 14px rgba(125, 223, 144, 0.35);
 }
 
 /* ── Filter controls ──────────────────────────────────────────────────────── */
@@ -66,19 +87,68 @@
   padding-top: 0.5rem;
 }
 
+/* The hero: deep space in both themes, with a live portal swirling behind the title */
 .welcome-greeting {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
   margin-bottom: 2rem;
+  padding: 2.75rem 1.5rem 2.9rem;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(125% 140% at 50% 0%, #13245a 0%, #0a1230 45%, #060b1f 100%);
+  border: 1px solid rgba(125, 223, 144, 0.22);
+  box-shadow: 0 18px 48px rgba(3, 8, 28, 0.45);
 }
+
+.welcome-greeting::before {
+  content: '';
+  position: absolute;
+  width: 620px;
+  height: 620px;
+  left: 50%;
+  top: -360px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    transparent 0deg,
+    rgba(125, 223, 144, 0.55) 60deg,
+    rgba(91, 138, 245, 0.45) 140deg,
+    transparent 215deg,
+    rgba(125, 223, 144, 0.4) 300deg,
+    transparent 360deg);
+  filter: blur(36px);
+  opacity: 0.55;
+  animation: portal-spin 24s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes portal-spin {
+  to { transform: translateX(-50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-greeting::before { animation: none; }
+}
+
 .welcome-greeting h2 {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 0.4rem;
+  position: relative;
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 3.2vw, 2.05rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  margin: 0 0 0.6rem;
+  background: linear-gradient(92deg, #7ddf90 5%, #a8f5c0 30%, #8fb3ff 70%, #5b8af5 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .welcome-greeting p {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin: 0;
+  position: relative;
+  font-size: 0.9rem;
+  color: #cdd7ef;
+  max-width: 620px;
+  margin: 0 auto;
   line-height: 1.65;
 }
 
@@ -190,7 +260,7 @@
   font-size: 0.6rem;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--bs-pink);
+  color: var(--portal-dark);
   white-space: nowrap;
 }
 
@@ -215,9 +285,9 @@
   font-family: var(--font-sans);
 }
 .welcome-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 4px 14px rgba(91, 138, 245, 0.12);
-  transform: translateY(-2px);
+  border-color: rgba(125, 223, 144, 0.65);
+  box-shadow: 0 6px 22px rgba(91, 138, 245, 0.18), 0 0 16px rgba(125, 223, 144, 0.18);
+  transform: translateY(-3px);
 }
 .welcome-card.disabled {
   opacity: 0.5;
@@ -240,6 +310,11 @@
 .welcome-card-icon.clr-teal   { background: #d8f5ec; }
 .welcome-card-icon.clr-purple { background: #eeedfe; }
 .welcome-card-icon.clr-amber  { background: #faeeda; }
+
+html.dark .welcome-card-icon.clr-blue   { background: #16234d; }
+html.dark .welcome-card-icon.clr-teal   { background: #0c2b22; }
+html.dark .welcome-card-icon.clr-purple { background: #221d4d; }
+html.dark .welcome-card-icon.clr-amber  { background: #33260f; }
 
 .welcome-card-title {
   font-size: 0.82rem;
@@ -264,7 +339,7 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-.welcome-card-dot.ready { background: #3fae4f; }            /* green — ready */
+.welcome-card-dot.ready { background: var(--portal-dark); } /* portal green — ready */
 .welcome-card-dot.soon  { background: #b8bcc4; }            /* grey — in progress */
 
 /* ── Tips row ────────────────────────────────────────────────────────────── */

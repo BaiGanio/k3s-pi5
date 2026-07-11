@@ -397,7 +397,7 @@
   <!-- ── Hero ──────────────────────────────────────────────────────────────── -->
   <header class="hero">
     <div class="hero-inner">
-      <!-- <span class="hero-kicker"><i class="bi bi-stars"></i> Reference Architecture</span> -->
+      <span class="hero-kicker"><i class="bi bi-stars" style="color:#7ddf90;"></i> Reference Architecture</span>
       <h1><span class="accent">Rick &amp; Morty</span></h1>
 
       <div class="hero-banner">
@@ -932,7 +932,7 @@ GET /metrics  → { "requests_served": 1423, ... }   ← Prometheus scrape</pre>
       const toggle = document.getElementById('theme-toggle');
       const icon = document.getElementById('theme-icon');
 
-      function isDark() { return localStorage.getItem(KEY) === 'dark'; }
+      function isDark() { return localStorage.getItem(KEY) !== 'light'; }
       function apply(dark) {
         document.documentElement.classList.toggle('dark', dark);
         document.documentElement.setAttribute('data-bs-theme', dark ? 'dark' : 'light');

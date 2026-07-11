@@ -13,6 +13,26 @@ code,
   font-family: var(--font-mono);
 }
 
+/* Inline code — portal green instead of Bootstrap pink */
+code {
+  color: var(--portal-dark);
+}
+
+/* ── Navbar — deep space with the portal event-horizon line ──────────────── */
+.navbar.bg-dark {
+  background-color: #0a1230 !important;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, #7ddf90, #5b8af5 55%, rgba(91, 138, 245, 0)) 1;
+}
+
+/* Brand wordmark glows portal green→blue */
+.navbar-brand span:first-of-type {
+  background: linear-gradient(92deg, #7ddf90, #8fb3ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* ── Command name ────────────────────────────────────────────────────────── */
 .command-name {
   font-family: var(--font-mono);
@@ -42,6 +62,7 @@ code,
   font-size: 0.82rem;
   overflow-x: auto;
   white-space: pre-wrap;
+  border: 1px solid var(--code-border);
 }
 
 /* Shell syntax highlighting inside example boxes */
@@ -52,7 +73,7 @@ code,
 .why-box {
   background: var(--accent-bg);
   color: var(--accent-text);
-  border-left: 4px solid var(--text-accent);
+  border-left: 4px solid var(--portal-dark);
   padding: 10px 14px;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -91,7 +112,7 @@ code,
 
 .accordion-button:not(.collapsed) {
   color: var(--text-accent);
-  background: #f0f5ff;
+  background: var(--accent-bg);
   box-shadow: none;
 }
 
@@ -226,13 +247,17 @@ code,
   border-color: #f59e0b;
 }
 
+html.dark .module-note--tip     { background: #0c2b22; color: #8ce0b0; border-color: #2f9e57; }
+html.dark .module-note--warning { background: #2e2410; color: #f0d86e; border-color: #b98a1d; }
+html.dark .module-note code     { background: rgba(255, 255, 255, 0.08); }
+
 /* ── Section badge (numbered circle) ────────────────────────────────────── */
 .section-badge {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--text-accent);
-  color: #fff;
+  background: var(--portal-gradient);
+  color: #071336;
   display: inline-flex;
   align-items: center;
   justify-content: center;

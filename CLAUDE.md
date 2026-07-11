@@ -1,184 +1,117 @@
-# CLAUDE.md — [Project Name]
+# CLAUDE.md — k3s-pi5
 
 > This file orients AI agents working in this repo: what the project is, where the
 > sharp edges are, and how the developer wants to fly. It is a light marker, read at
 > the start of every session — keep it short, point to deeper docs, never duplicate them.
 >
-> *On lineage: this template is the form; every filled CLAUDE.md is a particular
-> that partakes of it. But the truth of a project lives in neither file — it lives
-> in the developer. The protocol below exists only to recollect it.*
->
-> *And the destination is never the code. Code is the idea made visible — the
-> becoming, not the being. When the particulars disagree, climb: steer by the
-> idea, and the idea decides.*
+> *The destination is never the code. Code is the idea made visible — the becoming,
+> not the being. When the particulars disagree, climb: steer by the idea, and the
+> idea decides.*
 
-<!-- ═══════════════════════════════════════════════════════════════════════
-     FILL PROTOCOL — instructions for the model doing the one-time fill pass.
-     DELETE THIS ENTIRE BLOCK once the fill is complete and approved.
+## Project: k3s-pi5
 
-     Your job: turn this template into an accurate briefing for THIS repo.
-     Accuracy beats completeness. Every claim you write must be traceable to
-     (a) a file in the repo, or (b) an answer the developer gave you.
-     If you can prove neither: ASK. Never fill a section by guessing.
+A browser-based, self-paced DevOps curriculum — an interactive command reference that
+walks from a bare laptop to Kubernetes on a Raspberry Pi 5. Live at
+[baiganio.github.io/k3s-pi5](https://baiganio.github.io/k3s-pi5/), repo at
+[BaiGanio/k3s-pi5](https://github.com/BaiGanio/k3s-pi5).
 
-     ── Phase 1: Research (before asking anything) ──
-     Read, in this order, whatever exists:
-       1. README*                — what the project claims to be
-       2. SECURITY*, CONTRIBUTING*, LICENSE — stated policies
-       3. Package manifest (package.json / pyproject.toml / go.mod / Cargo.toml)
-                                 — real dependencies, scripts, entry points
-       4. CI config (.github/workflows/ etc.) — what actually gates merges
-       5. Config surface (.env.example, settings modules) — tunables, secrets shape
-       6. Migrations / schema files — the data model
-       7. Test setup            — how tests really run, not how docs say they run
-       8. Directory tree, 2 levels deep — module layout
-     Draft answers for each section below and note where each answer came from.
-
-     ── Phase 2: Interview — grill the developer ──
-     The repo cannot tell you what has burned the developer before, what they
-     fear touching, or how they want to work with you. That knowledge is the
-     most valuable content in this file, so extract it.
-
-     You are practicing maieutics — Socratic midwifery (Theaetetus 150b).
-     The developer already carries this knowledge; they have simply never had
-     to say it aloud. Your questions add nothing — they deliver what is
-     already there. The repo shows you shadows on the cave wall; only the
-     developer can tell you what casts them. Rules:
-       - Ask in small batches (3–5 questions), most important first.
-       - Ask concrete questions ("which file, edited wrong, ruins your week?")
-         not abstract ones ("any fragile code?").
-       - Each section below carries an ASK comment with its interview questions.
-         A section is DONE only when it is filled with evidence or the developer
-         explicitly said "not applicable".
-       - When an answer surprises you, follow up. Depth beats coverage.
-       - Contradiction between repo evidence and the developer's answer?
-         Surface it and ask which is true — that gap is exactly what this
-         file exists to close.
-
-     ── Phase 3: Write ──
-       - Fill every section. Delete sections the developer marked N/A —
-         an empty heading is worse than no heading.
-       - Delete every EVIDENCE/ASK comment and this whole protocol block.
-       - Keep the final file lean: aim under ~150 lines of prose (tables and
-         command blocks excluded). Push depth into reference docs and link them.
-       - Show the finished file to the developer and get explicit sign-off
-         before considering the pass complete.
-     ═══════════════════════════════════════════════════════════════════════ -->
-
-## Project: [name]
-
-[One line: what it is and why it exists. Link to repo/homepage.]
-[One more line: the eidos — the idea of which this repo is only the current shadow.
-It decides arguments when trade-offs collide; every section below serves it.]
-
-<!-- EVIDENCE: README intro, repo description.
-     ASK: "What is the idea this repo is a shadow of — the thing that would still
-     be true if every line were rewritten? When two goals conflict
-     (speed vs. safety, features vs. simplicity), which one wins?" -->
+The eidos: **the walking is the portfolio.** Self-built, free tools, owned hardware;
+building a thing and documenting it are the same act. Every module carries the raw
+command, a breakdown of every flag, the expected output, and a "why" — when a change
+trades polish against that explanatory depth, depth wins.
 
 ## Co-pilot Contract
 
 How the developer wants to work with an AI agent in this repo:
 
-- [Where to act freely vs. where to ask first — e.g. "act in tests, ask before migrations"]
-- [The one thing an agent must never do here without confirmation]
-- [Verification habits — what "done" means before claiming done]
-- [Communication style — terse expert mode / explain-as-you-go]
-
-<!-- ASK: "Where do you want me to just act, and where must I ask first?
-     What must an agent never do in this repo? What's your definition of done —
-     tests green, manual check, something else? How much explanation do you want?"
-     This section has NO repo evidence — it comes entirely from the interview. -->
+- **Act freely** in `modules/**` data files and `lib/registry.js` entries. **Ask first**
+  before restructuring the renderer (`lib/index.js`), the shell (`lib/playground.js`,
+  `index.html`), or the CSS token layer.
+- **Never rewrite the README reference architecture or the `roadmap/` narrative without
+  confirmation** — they are the canon the modules orbit; tone and framing are deliberate.
+- **"Done" means verified in the browser**: serve the site locally, confirm the module
+  appears in the sidebar and navbar, renders all its blocks, and search / filters /
+  copy buttons / dark-light theme all still work. There is no test suite to hide behind.
+- Terse expert mode. Explain only what is surprising.
 
 ## Quick Start
 
 ```bash
-# Clone, install, run — the commands the developer actually types
+git clone https://github.com/BaiGanio/k3s-pi5.git
+cd k3s-pi5
+python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
-Key commands: [the daily-driver commands: run, test, migrate, lint]
+No install, no build, no dependencies. Push to `master` → GitHub Pages redeploys.
 
-<!-- EVIDENCE: README, manifest scripts, Makefile.
-     ASK: "Which commands do you actually run every day? Any script in the
-     manifest that looks important but is dead/legacy?" -->
+Key commands: `python3 -m http.server 8000` (run) · browser click-through (test).
 
 ## Tech Stack
 
-- **Runtime**: [language + version constraint]
-- **Framework**: [web/app framework]
-- **Database**: [engine + driver/ORM]
-- **Testing**: [runner + coverage tool]
-- [Other load-bearing dependencies]
-
-<!-- EVIDENCE: package manifest, lockfile, CI matrix.
-     ASK: "Any dependency pinned on purpose — a version I must NOT upgrade,
-     and why? Anything vendored or patched?" -->
+- **Runtime**: Browser-only vanilla JavaScript — plain `<script>` tags and globals, no
+  ES modules, no bundler, no `package.json`
+- **Framework**: Bootstrap 5.3 + Bootstrap Icons via CDN; Inter / JetBrains Mono via
+  Google Fonts
+- **Database**: None — static site (the PostgreSQL in the README is teaching content,
+  not infrastructure)
+- **Testing**: None — manual browser verification; no CI
+- **Hosting**: GitHub Pages, served from `master`
 
 ## Configuration
 
-[How the project is configured: .env / YAML / flags. Where the registry of
-settings lives, and the precedence order if there are multiple sources.]
+There is no env/flag configuration. The single source of truth is `MODULE_REGISTRY` in
+`lib/registry.js` — the only file you edit to add a module (its header comment is the
+how-to). UI state persists in `sessionStorage` (`sidebar-collapsed-groups`,
+`welcome-collapsed-groups`).
 
 Critical settings:
-- `KEY` — [what it controls, valid values, what breaks if wrong]
-
-<!-- EVIDENCE: .env.example, config module, settings docs.
-     ASK: "Which settings are dangerous to get wrong? Is there a precedence
-     order between config sources? Any setting that MUST stay off by default?" -->
+- `MODULE_REGISTRY[].modules[].script` — path to the module data file; a typo means the
+  module silently fails to load
+- `MODULE_REGISTRY[].modules[].id` — must be unique across all groups; used for routing
 
 ## Database
 
-[Schema overview: key tables/collections and what they hold. Migration strategy
-and its discipline — what keeps the schema honest.]
-
-<!-- EVIDENCE: migrations dir, schema files, ORM models.
-     ASK: "What's the migration discipline — anything that must stay in lockstep?
-     Has schema drift ever bitten you here?" -->
+None. The schema in `README.md` belongs to the Rick & Morty reference architecture that
+the curriculum teaches — do not "implement" it here.
 
 ## Fragile / No-Touch Zones
 
-[Files or modules where a small change has a large blast radius: what each does,
-why it's load-bearing, and how to verify a change there safely.]
-
-<!-- This is the highest-value section and the repo alone cannot write it.
-     EVIDENCE: files with dense import graphs, security-adjacent code, anything
-     with warning comments.
-     ASK: "What has actually broken before, and what change caused it?
-     Which file do you fear touching? For each fragile zone: how do I PROVE
-     a change there is safe — which test, which manual check?" -->
+- `lib/index.js` — the block renderer. Supports **two** module data formats
+  (`window.pageBlocks` typed blocks, and legacy flat `window.commandData` which gets
+  auto-wrapped). Renaming any data field breaks dozens of modules with no error.
+  Verify by loading one legacy module (e.g. Docker intro) and one block-based module.
+- `lib/playground.js` — sidebar, routing, theme toggle, mobile overlay. Bound to exact
+  DOM ids in `index.html` (`sidebar-nav`, `commandList`, `searchInput`, …).
+- `styles/index.css` — design tokens; the other three stylesheets read only from these
+  variables. Change tokens, check both themes.
 
 ## Module Coupling Map
 
 | Coupling | Why |
 |----------|-----|
-| `module/a` ↔ `module/b` | [Why a change in one silently breaks the other] |
-
-<!-- EVIDENCE: trace imports of the fragile zones above; shared data shapes,
-     protocols without schemas, parallel dirs that must stay in sync.
-     ASK: confirm each row — "if I change X, does Y really break?" -->
+| `lib/registry.js` ↔ `modules/**/*.js` | Registry `script` paths load module files by injection; each file must set `window.pageBlocks` or `window.commandData` |
+| `lib/index.js` ↔ module data shape | Renderer expects exact fields (`command`, `parts[].text/.explanation`, `example`, `why`, `searchTerms`); a missing field breaks that accordion |
+| `index.html` ↔ `lib/*.js` | `getElementById` contracts — renaming an id in one without the other kills the page silently |
+| `styles/index.css` ↔ other stylesheets | All components read the token variables defined there |
 
 ## Security Model
 
-- [Auth mechanism]
-- [Input validation / path safety strategy]
-- [Secrets management]
-- [Rate limiting, CORS, CSP, sandboxing]
-
-<!-- EVIDENCE: SECURITY.md, auth middleware, validation helpers.
-     ASK: "What's the threat model — who is this defended against?
-     Any security decision that looks wrong but is intentional?" -->
+- No auth, no secrets, no server — public static site.
+- Module content is trusted authored HTML rendered via `innerHTML` by design;
+  `escapeHtml()` covers command/example text. Never pipe untrusted input into module data.
+- Never commit real credentials into lab examples. (A committed EC2 key pair was removed
+  in July 2026 — it survives in git history, so treat that key as burned.)
 
 ## Code Conventions
 
-- [Module system, language level]
-- [Lint/format tooling and config]
-- [Type discipline: TS / JSDoc / hints]
-- [Error-handling philosophy]
-- [Unwritten rules — the things reviewers reject that no linter catches]
-
-<!-- EVIDENCE: lint config, editorconfig, reading 3–4 representative files.
-     ASK: "What are the unwritten rules — things you'd reject in review that
-     no tool enforces?" -->
+- Plain browser JS, 2-space indent, no lint/format tooling — match surrounding style.
+- Section banner comments: `// ── Title ────…` — keep them; they're the navigation.
+- New modules prefer `window.pageBlocks` (typed `prose | note | commands` blocks);
+  `window.commandData` is legacy, supported but not for new work.
+- Every command entry is complete or it isn't done: unique `id`, `section`/`sectionTitle`,
+  `commandTitle`, `command`, `searchTerms`, `description`, `parts` (each with
+  `explanation`), realistic `example` output, and a `why`. The "why" is the product.
+- HTML is allowed inside `description`/prose strings (rendered via `innerHTML`).
 
 ## Contribution Conventions
 
@@ -191,12 +124,10 @@ Types: `feature:`, `fix:`, `refactor:`, `chore:`.
 Types: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`.
 
 ### Changelog & versioning
-`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/). Add entries under
-`## Unreleased`. Release workflow handles version bumps — never manually bump version files.
-Versioning: [SemVer](https://semver.org/).
-
-<!-- Ready to use as-is. ASK only: "Does the release workflow really own version
-     bumps here, or is that aspirational?" Adjust if the repo differs. -->
+No `CHANGELOG.md` or version files yet — the README's **Project Status tracker** is the
+authoritative record of what's done vs. planned. Keep it in sync with reality. If a
+changelog is introduced later, follow [Keep a Changelog](https://keepachangelog.com/)
+and [SemVer](https://semver.org/).
 
 ## Plans
 
@@ -286,14 +217,12 @@ When a plan is executed:
 Right-size the model to the task. A typo fix does not need a frontier model. A security
 audit does not belong on a 7B local model. Default priority:
 
-1. **Local first** — [local model setup, if any] for code edits, file ops, structured
-   reasoning. Zero API cost.
-2. **Cheapest capable cloud** — [preferred provider] for reasoning-heavy work,
-   [secondary] for throughput.
-3. **Precision-critical only** — [strongest model] when instruction-following is paramount.
-
-<!-- ASK: "Do you run local models? Which cloud providers do you pay for, and
-     what's your cost tolerance — when is the expensive model worth it?" -->
+1. **Local first** — no local model is configured yet; when one lands (e.g. Ollama on
+   the M1 Pro), route code edits, file ops, and structured reasoning there. Zero API cost.
+2. **Cheapest capable cloud** — Claude Sonnet for reasoning-heavy work (module authoring,
+   refactors), Claude Haiku for throughput (bulk data-file edits, format conversions).
+3. **Precision-critical only** — Claude Opus / Fable when instruction-following is
+   paramount (renderer changes, security-sensitive review).
 
 ## Documentation Sync
 
@@ -302,20 +231,15 @@ or changes configuration, check whether these files need updates:
 
 | Change type | Files to update |
 |-------------|-----------------|
-| New feature / tool | `FEATURES.md`, `CHANGELOG.md` |
-| API / config change | `README.md` (if documented there), `CHANGELOG.md` |
-| Security fix | `SECURITY.md`, `CHANGELOG.md` |
-| Dependency change | `README.md` (if listed), `CHANGELOG.md` |
-| Architecture change | `[architecture doc]`, `CHANGELOG.md` |
-| Breaking change | `README.md`, `FEATURES.md`, `CHANGELOG.md` |
+| New module / group | `lib/registry.js`, README curriculum table & Status tracker |
+| Curriculum progress (item done/planned) | README Project Status tracker, `roadmap/` phase file |
+| Reference architecture change | `README.md` |
+| Roadmap / phase change | `roadmap/roadmap.md` + the affected `phase-*.md` |
 
 **Always confirm with the developer before writing doc updates.** State which files need
 changes and why. Wait for confirmation. Never silently modify documentation.
 
 After a commit, push, or release, re-check this table and offer to update any stale docs.
-
-<!-- EVIDENCE: which of these doc files actually exist in the repo.
-     ASK: prune rows for files that don't exist; add rows for docs that do. -->
 
 ## Reference Files
 
@@ -323,15 +247,13 @@ Deep-dive docs live here — read on demand, not every turn:
 
 | Topic | File |
 |-------|------|
-| Architecture | `[path]` |
-| API / tools | `[path]` |
-| Testing guide | `[path]` |
-| Troubleshooting | `[path]` |
-| CI/CD | `[path]` |
-| Known tech debt | `[path]` |
-
-<!-- EVIDENCE: docs/ or similar dirs. ASK: "Where do the deep docs live?
-     Which are trustworthy and which are stale?" Mark stale ones or drop them. -->
+| Reference architecture (Rick & Morty 3-service app) | `README.md` |
+| Curriculum map & rules of the road | `roadmap/roadmap.md` |
+| Phase deep-dives | `roadmap/phase-1…4-*.md` |
+| Homelab hardware guide | `roadmap/homelab-guide.md` |
+| How to add a module | `lib/registry.js` (header comment) |
+| Exam-prep scratch (not curriculum) | `notes/exam0/` |
+| Vagrant VM scratch (not curriculum) | `planets-dev/` |
 
 ## Maintaining This File
 
