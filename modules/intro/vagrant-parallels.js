@@ -139,9 +139,23 @@ window.pageBlocks = [
     title: 'Step 2: Create the project and write the Vagrantfile',
     content: `
       <p>
-        Every Vagrant project is a folder. Inside it lives the Vagrantfile — the one
-        file that defines both VMs, their resources, their networks, and what software
-        to install.
+        Every Vagrant project is a folder. Inside it lives the Vagrantfile — the file
+        that defines the VMs, their resources, their networks, and what software to install.
+      </p>
+
+      <p><strong>Choose your path:</strong></p>
+      <ul>
+        <li><strong>Single Vagrantfile</strong> (main path, below) — both VMs in one file;
+        one <code>vagrant up</code> boots the full stack. Best when you want everything now.</li>
+        <li><strong>Split Vagrantfiles</strong> (alternative) — one file per VM in separate
+        subdirectories; boot only the database, only the web tier, or both. Best when you
+        want per-VM control.</li>
+      </ul>
+
+      <p>
+        <strong>All commands use shell heredocs</strong> (<code>cat > file <<'DELIM'</code>)
+        to create files entirely from the terminal. Copy the example content, paste it,
+        type the closing delimiter on its own line — no GUI editor needed.
       </p>
     `,
   },
@@ -166,22 +180,20 @@ window.pageBlocks = [
       },
       {
         id: 202,
-        commandTitle: 'Write the complete two-VM Vagrantfile',
-        command: 'cat Vagrantfile',
-        searchTerms: 'vagrantfile complete two vm app-web app-db dotnet postgresql planets provision private network port forward',
-        description: 'Create a file named <code>Vagrantfile</code> in your <code>planets-dev</code> folder — use any editor, VS Code, or right-click → New File. Copy the complete content from <strong>Example output</strong> below and paste it in. The file declares both VMs (<code>app-db</code> first, because <code>app-web</code> depends on the database being ready), each with its own hostname, private-network IP, port forward, and provisioning script.',
+        commandTitle: 'Create the full-stack Vagrantfile (heredoc — no editor needed)',
+        command: "cat > Vagrantfile <<'VFILE'",
+        searchTerms: 'vagrantfile heredoc create terminal cat write file dotnet postgresql planets provision private network port forward',
+        description: 'Creates the Vagrantfile from the terminal using a shell heredoc. After running the command, the terminal waits for input: <strong>copy the entire content from the Example block below and paste it in</strong>. Then type <code>VFILE</code> on its own line and press Enter — the file is written immediately. No VS Code, no right-click, no GUI. The single Vagrantfile declares both VMs (<code>app-db</code> first, then <code>app-web</code>), each with its own hostname, private-network IP, port forward, and provisioning script.',
         parts: [
-          { text: "config.vm.define 'app-db'", explanation: 'declares the database VM — installs PostgreSQL, creates the planets database, seeds all eight planet rows; declared first so vagrant up boots it first' },
-          { text: "config.vm.define 'app-web'", explanation: 'declares the API VM — installs the .NET 10 SDK, scaffolds a Minimal API project, adds Npgsql, writes Program.cs, publishes, and starts a systemd service' },
-          { text: "db.vm.hostname / web.vm.hostname", explanation: 'Vagrant sets the OS hostname at boot from this value — visible as the shell prompt inside the VM' },
-          { text: "private_network ip: ...", explanation: 'static IPs on the Vagrant private network — app-web (192.168.56.10) connects to app-db (192.168.56.20) over this isolated link' },
-          { text: "forwarded_port", explanation: '5000 → Minimal API, 5432 → PostgreSQL for Mac-side GUI tools — both reachable as localhost:* on your Mac' },
+          { text: "cat > Vagrantfile", explanation: 'redirects all subsequent keyboard input into Vagrantfile, overwriting any existing content' },
+          { text: "<<'VFILE'", explanation: 'opens a heredoc — everything you type next is treated as literal text; the single quotes around VFILE prevent shell expansion of $variables' },
+          { text: '(paste the full content from Example below, then type VFILE on its own line)', explanation: 'the complete two-VM Vagrantfile — copy it from the Example section and paste into the terminal' },
         ],
         example: `Vagrant.configure('2') do |config|
 
   # ── app-db: PostgreSQL 16 + planets seed ──
   config.vm.define 'app-db' do |db|
-    db.vm.box      = 'bento/ubuntu-24.04-arm64'
+    db.vm.box      = 'bento/ubuntu-24.04'
     db.vm.hostname = 'app-db'
 
     db.vm.provider 'parallels' do |prl|
@@ -236,7 +248,7 @@ SQL
 
   # ── app-web: .NET 10 Minimal API ──
   config.vm.define 'app-web' do |web|
-    web.vm.box      = 'bento/ubuntu-24.04-arm64'
+    web.vm.box      = 'bento/ubuntu-24.04'
     web.vm.hostname = 'app-web'
 
     web.vm.provider 'parallels' do |prl|
@@ -311,7 +323,199 @@ UNIT
   end
 
 end`,
-        why: 'The Vagrantfile is the single source of truth. Anyone with this file can reproduce the entire two-VM lab on any Mac with Parallels — same OS, same packages, same data, same behaviour.',
+        why: 'A heredoc keeps you entirely in the terminal — no context switch to a GUI editor. Copy the example content, paste it, type <code>VFILE</code>, and the Vagrantfile is ready. The single-file approach means one <code>vagrant up</code> boots both VMs with correct ordering (db before web).',
+      },
+    ],
+  },
+
+  // ── Split Vagrantfiles Alternative ───────────────────────────────────────
+
+  {
+    type: 'prose',
+    title: 'Alternative: split Vagrantfiles (one per VM)',
+    content: `
+      <p>
+        If you prefer to manage each VM independently — boot only the database, only the
+        web tier, or both on demand — use separate Vagrantfiles in subdirectories.
+      </p>
+      <p>
+        Each subdirectory is its own Vagrant project with its own <code>.vagrant/</code>
+        state. Destroy the database VM without touching the web VM, or vice versa. The
+        two VMs still talk over the same <code>192.168.56.x</code> private network.
+      </p>
+      <p><strong>Boot order:</strong> start <code>db</code> first, then <code>web</code>:</p>
+      <pre><code>cd db && vagrant up --provider parallels
+cd ../web && vagrant up --provider parallels</code></pre>
+    `,
+  },
+
+  {
+    type: 'commands',
+    section: 'split-db',
+    sectionTitle: 'Create db/Vagrantfile (app-db only)',
+    items: [
+      {
+        id: 211,
+        commandTitle: 'Database VM Vagrantfile',
+        command: "mkdir -p db && cat > db/Vagrantfile <<'VFILE'",
+        searchTerms: 'vagrantfile split database app-db postgresql planets private subdirectory parallel',
+        description: 'Creates the database-only Vagrantfile in a <code>db/</code> subdirectory using a heredoc. Run <code>cd db && vagrant up --provider parallels</code> to boot just this VM. Paste the Example content, type <code>VFILE</code> on its own line, and press Enter.',
+        parts: [
+          { text: 'mkdir -p db', explanation: 'creates the db subdirectory for the database Vagrant project' },
+          { text: "cat > db/Vagrantfile <<'VFILE'", explanation: 'opens a heredoc that writes into db/Vagrantfile — paste the content, then type VFILE to close' },
+        ],
+        example: `Vagrant.configure('2') do |config|
+  config.vm.define 'app-db' do |db|
+    db.vm.box      = 'bento/ubuntu-24.04'
+    db.vm.hostname = 'app-db'
+
+    db.vm.provider 'parallels' do |prl|
+      prl.name   = 'app-db'
+      prl.memory = 1024
+      prl.cpus   = 1
+    end
+
+    db.vm.network 'private_network', ip: '192.168.56.20'
+    db.vm.network 'forwarded_port',  guest: 5432, host: 5432
+
+    db.vm.provision 'shell', inline: <<-SHELL
+      set -e
+      apt-get update -q
+      apt-get install -y postgresql postgresql-contrib
+
+      PG_HBA=$(find /etc/postgresql -name pg_hba.conf | head -1)
+      PG_CONF=$(find /etc/postgresql -name postgresql.conf | head -1)
+      sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" "$PG_CONF"
+      echo "host  planets  planets_user  192.168.56.0/24  scram-sha-256" >> "$PG_HBA"
+
+      systemctl restart postgresql
+      sleep 3
+
+      sudo -u postgres psql -c "CREATE USER planets_user WITH PASSWORD 'DevPass123!';"
+      sudo -u postgres psql -c "CREATE DATABASE planets OWNER planets_user;"
+      sudo -u postgres psql -d planets <<'SQL'
+CREATE TABLE planet (
+  planetid      INT PRIMARY KEY,
+  name          VARCHAR(100) NOT NULL,
+  massearths    DECIMAL(10,4),
+  radiuskm      DECIMAL(10,2),
+  distanceau    DECIMAL(10,4),
+  hasrings      BOOLEAN,
+  atmosphere    VARCHAR(255),
+  discoveredby  VARCHAR(100),
+  discoveryyear INT
+);
+INSERT INTO planet VALUES
+  (1,'Mercury',0.055,2439.7,0.39,FALSE,'Oxygen, Sodium, Hydrogen',NULL,NULL),
+  (2,'Venus',0.815,6051.8,0.72,FALSE,'CO2, Nitrogen',NULL,NULL),
+  (3,'Earth',1.000,6371.0,1.00,FALSE,'Nitrogen, Oxygen',NULL,NULL),
+  (4,'Mars',0.107,3389.5,1.52,FALSE,'CO2, Nitrogen, Argon',NULL,NULL),
+  (5,'Jupiter',317.8,69911,5.20,TRUE,'Hydrogen, Helium','Galileo Galilei',1610),
+  (6,'Saturn',95.16,58232,9.58,TRUE,'Hydrogen, Helium','Galileo Galilei',1610),
+  (7,'Uranus',14.54,25362,19.22,TRUE,'Hydrogen, Helium, Methane','William Herschel',1781),
+  (8,'Neptune',17.15,24622,30.05,TRUE,'Hydrogen, Helium, Methane','Urbain Le Verrier',1846);
+GRANT ALL ON TABLE planet TO planets_user;
+SQL
+    SHELL
+  end
+end`,
+        why: 'A separate Vagrantfile per VM means each can be destroyed, rebuilt, suspended, or snapshotted independently — useful when you only need the database running during frontend development, or only the API for integration testing.',
+      },
+    ],
+  },
+
+  {
+    type: 'commands',
+    section: 'split-web',
+    sectionTitle: 'Create web/Vagrantfile (app-web only)',
+    items: [
+      {
+        id: 212,
+        commandTitle: 'Web VM Vagrantfile',
+        command: "mkdir -p web && cat > web/Vagrantfile <<'VFILE'",
+        searchTerms: 'vagrantfile split web app-web dotnet api planets minimal private subdirectory parallel',
+        description: 'Creates the web-only Vagrantfile in a <code>web/</code> subdirectory using a heredoc. Run <code>cd web && vagrant up --provider parallels</code> to boot just this VM. <strong>Note:</strong> the <code>app-db</code> VM must already be running — this Vagrantfile does not create or manage the database.',
+        parts: [
+          { text: 'mkdir -p web', explanation: 'creates the web subdirectory for the API Vagrant project' },
+          { text: "cat > web/Vagrantfile <<'VFILE'", explanation: 'opens a heredoc that writes into web/Vagrantfile — paste the content, then type VFILE to close' },
+        ],
+        example: `Vagrant.configure('2') do |config|
+  config.vm.define 'app-web' do |web|
+    web.vm.box      = 'bento/ubuntu-24.04'
+    web.vm.hostname = 'app-web'
+
+    web.vm.provider 'parallels' do |prl|
+      prl.name   = 'app-web'
+      prl.memory = 1024
+      prl.cpus   = 1
+    end
+
+    web.vm.network 'private_network', ip: '192.168.56.10'
+    web.vm.network 'forwarded_port',  guest: 5000, host: 5000
+
+    web.vm.provision 'shell', inline: <<-SHELL
+      set -e
+      apt-get update -q
+      apt-get install -y dotnet-sdk-10.0
+
+      mkdir -p /opt/planets-api && cd /opt/planets-api
+      dotnet new web -o . --force
+      dotnet add package Npgsql
+
+      cat > Program.cs <<'CSHARP'
+using Npgsql;
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+var connStr = Environment.GetEnvironmentVariable("DB_CONN")
+    ?? "Host=192.168.56.20;Database=planets;Username=planets_user;Password=DevPass123!";
+app.MapGet("/planets", async () => {
+    await using var conn = new NpgsqlConnection(connStr);
+    await conn.OpenAsync();
+    await using var cmd = new NpgsqlCommand(
+        "SELECT planetid, name, massearths, radiuskm, distanceau, hasrings FROM planet ORDER BY planetid",
+        conn);
+    await using var reader = await cmd.ExecuteReaderAsync();
+    var list = new List<object>();
+    while (await reader.ReadAsync())
+        list.Add(new {
+            id         = reader.GetInt32(0),
+            name       = reader.GetString(1),
+            massEarths = reader.IsDBNull(2) ? (decimal?)null : reader.GetDecimal(2),
+            radiusKm   = reader.IsDBNull(3) ? (decimal?)null : reader.GetDecimal(3),
+            distanceAU = reader.IsDBNull(4) ? (decimal?)null : reader.GetDecimal(4),
+            hasRings   = !reader.IsDBNull(5) && reader.GetBoolean(5)
+        });
+    return Results.Ok(list);
+});
+app.Run();
+CSHARP
+
+      dotnet publish -c Release -o /opt/planets-api/publish
+
+      cat > /etc/systemd/system/planets-api.service <<'UNIT'
+[Unit]
+Description=Planets Minimal API
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/planets-api/publish
+ExecStart=/usr/bin/dotnet /opt/planets-api/publish/planets-api.dll
+Restart=always
+RestartSec=5
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
+Environment=DB_CONN=Host=192.168.56.20;Database=planets;Username=planets_user;Password=DevPass123!
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+      systemctl daemon-reload
+      systemctl enable planets-api
+      systemctl start planets-api
+    SHELL
+  end
+end`,
+        why: 'The web VM needs the database VM already running — it connects to <code>192.168.56.20:5432</code> at boot. Running only the web VM is useful when iterating on the API code and you want to keep the database stable and untouched.',
       },
     ],
   },
@@ -347,7 +551,7 @@ end`,
           { text: 'vagrant up', explanation: 'creates and boots all VMs defined in the Vagrantfile, running provisioners on first boot' },
           { text: '--provider parallels', explanation: 'selects Parallels explicitly — omit if you set VAGRANT_DEFAULT_PROVIDER in Step 1' },
         ],
-        example: "Bringing machine 'app-db' up with 'parallels' provider...\n==> app-db: Box 'bento/ubuntu-24.04-arm64' not found. Installing now...\n==> app-db: Machine booted and ready!\n==> app-db: Running provisioner: shell...\n    app-db: * Install PostgreSQL ...\n    app-db: * Create planets database ...\nBringing machine 'app-web' up with 'parallels' provider...\n==> app-web: Machine booted and ready!\n==> app-web: Running provisioner: shell...\n    app-web: * Install .NET SDK 10.0 ...\n    app-web: * Build planets-api ...\n    app-web: * Start systemd service ...",
+        example: "Bringing machine 'app-db' up with 'parallels' provider...\n==> app-db: Box 'bento/ubuntu-24.04' not found. Installing now...\n==> app-db: Machine booted and ready!\n==> app-db: Running provisioner: shell...\n    app-db: * Install PostgreSQL ...\n    app-db: * Create planets database ...\nBringing machine 'app-web' up with 'parallels' provider...\n==> app-web: Machine booted and ready!\n==> app-web: Running provisioner: shell...\n    app-web: * Install .NET SDK 10.0 ...\n    app-web: * Build planets-api ...\n    app-web: * Start systemd service ...",
         why: 'One command, whole stack. No manual ordering — Vagrant boots <code>app-db</code> first because it appears first in the Vagrantfile, then <code>app-web</code> after.',
       },
       {
@@ -408,6 +612,65 @@ end`,
         ],
         example: "Welcome to Ubuntu 24.04 LTS (GNU/Linux 6.8.0-generic aarch64)\nvagrant@app-web:~$",
         why: 'Being able to SSH into either VM independently is how you debug, inspect logs, and run ad-hoc commands.',
+      },
+    ],
+  },
+
+  // ── Verify PostgreSQL inside the app-db VM ──────────────────────────────
+
+  {
+    type: 'prose',
+    title: 'Inside the app-db VM',
+    content: `
+      <p>
+        Now that you are inside the database VM, run these commands to verify PostgreSQL is
+        healthy and the planets data was seeded correctly. Everything here was set up by the
+        <code>app-db</code> provisioner during <code>vagrant up</code> — these commands
+        only verify the state.
+      </p>
+    `,
+  },
+
+  {
+    type: 'commands',
+    section: 'app-db',
+    sectionTitle: 'Inspect PostgreSQL on app-db',
+    items: [
+      {
+        id: 601,
+        commandTitle: 'Verify PostgreSQL is running',
+        command: 'systemctl status postgresql --no-pager',
+        searchTerms: 'systemctl status postgresql running active verify app-db',
+        description: 'Confirms the <code>postgresql</code> systemd unit is active. PostgreSQL on Ubuntu 24.04 installs as version 16 and registers its own service unit automatically.',
+        parts: [
+          { text: 'systemctl status postgresql', explanation: 'should report "active (running)"; if it says "failed", check journalctl -u postgresql' },
+        ],
+        example: "● postgresql.service - PostgreSQL RDBMS\n   Active: active (exited)\n● postgresql@16-main.service - PostgreSQL Cluster 16-main\n   Active: active (running)",
+        why: 'PostgreSQL on Ubuntu uses a two-service model: the umbrella <code>postgresql.service</code> and the versioned <code>postgresql@16-main.service</code>. Both must be active.',
+      },
+      {
+        id: 602,
+        commandTitle: 'List the planets database',
+        command: 'sudo -u postgres psql -c "\\l"',
+        searchTerms: 'psql postgres list databases planets l',
+        description: 'Connects as the postgres superuser and lists all databases. The <code>planets</code> database should appear with <code>planets_user</code> as the owner — confirming the provisioner created it correctly.',
+        parts: [
+          { text: 'sudo -u postgres psql -c "\\l"', explanation: 'runs as the postgres OS user and lists databases in a single non-interactive command' },
+        ],
+        example: "   Name    |  Owner       | Encoding\n-----------+--------------+----------\n planets   | planets_user | UTF8",
+        why: 'If the planets database is missing, the provisioner SQL did not run — check vagrant provision app-db to re-run it.',
+      },
+      {
+        id: 603,
+        commandTitle: 'Query the seeded planets table',
+        command: 'sudo -u postgres psql -d planets -c "SELECT planetid, name, hasrings FROM planet ORDER BY planetid;"',
+        searchTerms: 'psql postgres select planets seeded data rows verify',
+        description: 'Queries the <code>planet</code> table directly. Should return eight rows — Mercury through Neptune — with their ring status. If this works, the seed data from the provisioner is intact.',
+        parts: [
+          { text: 'sudo -u postgres psql -d planets -c "SELECT ..."', explanation: 'connects to the planets database and runs a single SQL query' },
+        ],
+        example: " planetid |  name   | hasrings\n----------+---------+----------\n        1 | Mercury | f\n        2 | Venus   | f\n        3 | Earth   | f\n        4 | Mars    | f\n        5 | Jupiter | t\n        6 | Saturn  | t\n        7 | Uranus  | t\n        8 | Neptune | t\n(8 rows)",
+        why: 'The eight rows prove the INSERT statements ran correctly. If there are zero rows, the provisioner SQL failed — re-run vagrant provision app-db.',
       },
     ],
   },
@@ -484,70 +747,11 @@ end`,
     ],
   },
 
-  // ── Step 6: Inspect the app-db VM ────────────────────────────────────────
+  // ── Step 6: End-to-End Test from Your Mac ────────────────────────────────
 
   {
     type: 'prose',
-    title: 'Inside the app-db VM',
-    content: `
-      <p>
-        The next few commands are run <strong>after <code>vagrant ssh app-db</code></strong>.
-        They inspect the PostgreSQL install and the seeded planets table. Everything here was
-        set up by the <code>app-db</code> provisioner during <code>vagrant up</code> — these
-        commands only verify the state.
-      </p>
-    `,
-  },
-
-  {
-    type: 'commands',
-    section: 'app-db',
-    sectionTitle: 'Inspect PostgreSQL on app-db',
-    items: [
-      {
-        id: 601,
-        commandTitle: 'Verify PostgreSQL is running',
-        command: 'systemctl status postgresql --no-pager',
-        searchTerms: 'systemctl status postgresql running active verify app-db',
-        description: 'Confirms the <code>postgresql</code> systemd unit is active. PostgreSQL on Ubuntu 24.04 installs as version 16 and registers its own service unit automatically.',
-        parts: [
-          { text: 'systemctl status postgresql', explanation: 'should report "active (running)"; if it says "failed", check journalctl -u postgresql' },
-        ],
-        example: "● postgresql.service - PostgreSQL RDBMS\n   Active: active (exited)\n● postgresql@16-main.service - PostgreSQL Cluster 16-main\n   Active: active (running)",
-        why: 'PostgreSQL on Ubuntu uses a two-service model: the umbrella <code>postgresql.service</code> and the versioned <code>postgresql@16-main.service</code>. Both must be active.',
-      },
-      {
-        id: 602,
-        commandTitle: 'List the planets database',
-        command: 'sudo -u postgres psql -c "\\l"',
-        searchTerms: 'psql postgres list databases planets l',
-        description: 'Connects as the postgres superuser and lists all databases. The <code>planets</code> database should appear with <code>planets_user</code> as the owner — confirming the provisioner created it correctly.',
-        parts: [
-          { text: 'sudo -u postgres psql -c "\\l"', explanation: 'runs as the postgres OS user and lists databases in a single non-interactive command' },
-        ],
-        example: "   Name    |  Owner       | Encoding\n-----------+--------------+----------\n planets   | planets_user | UTF8",
-        why: 'If the planets database is missing, the provisioner SQL did not run — check vagrant provision app-db to re-run it.',
-      },
-      {
-        id: 603,
-        commandTitle: 'Query the seeded planets table',
-        command: 'sudo -u postgres psql -d planets -c "SELECT planetid, name, hasrings FROM planet ORDER BY planetid;"',
-        searchTerms: 'psql postgres select planets seeded data rows verify',
-        description: 'Queries the <code>planet</code> table directly. Should return eight rows — Mercury through Neptune — with their ring status. If this works, the seed data from the provisioner is intact.',
-        parts: [
-          { text: 'sudo -u postgres psql -d planets -c "SELECT ..."', explanation: 'connects to the planets database and runs a single SQL query' },
-        ],
-        example: " planetid |  name   | hasrings\n----------+---------+----------\n        1 | Mercury | f\n        2 | Venus   | f\n        3 | Earth   | f\n        4 | Mars    | f\n        5 | Jupiter | t\n        6 | Saturn  | t\n        7 | Uranus  | t\n        8 | Neptune | t\n(8 rows)",
-        why: 'The eight rows prove the INSERT statements ran correctly. If there are zero rows, the provisioner SQL failed — re-run vagrant provision app-db.',
-      },
-    ],
-  },
-
-  // ── Step 7: End-to-End Test from Your Mac ────────────────────────────────
-
-  {
-    type: 'prose',
-    title: 'Step 7: End-to-end test — call the API from your Mac browser',
+    title: 'Step 6: End-to-end test — call the API from your Mac browser',
     content: `
       <p>
         Thanks to Vagrant\'s port forwarding, <code>localhost:5000</code> on your Mac
@@ -590,7 +794,7 @@ end`,
     ],
   },
 
-  // ── Step 8: Day-to-day commands ──────────────────────────────────────────
+  // ── Step 7: Day-to-day commands ──────────────────────────────────────────
 
   {
     type: 'commands',
